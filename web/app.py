@@ -16,9 +16,12 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from web.ai_assistant import ai_configured, apply_proposal, chat as ai_chat
 from web.checklist import evaluate_application_readiness
 from web.git_sync import git_sync_configured, sync_cv_yaml_to_github
+from web.import_cv import document_to_yaml, merge_import, parse_import_payload
 from web.r2_store import hydrate_from_r2, last_publish_error, publish_workspace
+from web.schema_meta import schema_meta
 
 logger = logging.getLogger("web.app")
 
@@ -48,7 +51,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="Solarnode CV Editor", version="0.5.0", lifespan=lifespan)
+app = FastAPI(title="Solarnode CV Editor", version="0.6.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
@@ -60,6 +63,25 @@ class StatusResponse(BaseModel):
     ok: bool
     message: str
     detail: str | None = None
+
+
+class ImportPayload(BaseModel):
+    content: str = Field(..., min_length=1, max_length=MAX_CV_BYTES)
+    format: str = Field("auto", description="auto | yaml | json-resume")
+    mode: str = Field("replace", description="replace | keep_design")
+    existing: str | None = Field(None, description="Optional current YAML for keep_design merge")
+
+
+class AiChatPayload(BaseModel):
+    message: str = Field(..., min_length=1, max_length=8000)
+    content: str = Field(..., min_length=1, max_length=MAX_CV_BYTES, description="Current cv.yaml")
+    job_description: str | None = Field(None, max_length=20000)
+    history: list[dict[str, str]] | None = None
+
+
+class AiApplyPayload(BaseModel):
+    content: str = Field(..., min_length=1, max_length=MAX_CV_BYTES)
+    proposal: dict
 
 
 def _resolve_rendercv() -> str:
@@ -130,8 +152,70 @@ async def health() -> dict:
         "r2_hydrated": _hydrated,
         "r2_last_publish_error": last_publish_error(),
         "git_sync": git_sync_configured(),
+        "ai_configured": ai_configured(),
         "render_busy": _render_lock.locked(),
     }
+
+
+@app.get("/api/schema-meta")
+async def get_schema_meta() -> dict:
+    """Enums and defaults for the form editor panels."""
+    return schema_meta()
+
+
+@app.post("/api/import")
+async def import_cv(payload: ImportPayload) -> dict:
+    """Import RenderCV YAML or JSON Resume into a document (+ YAML text)."""
+    try:
+        imported = parse_import_payload(payload.content, format_hint=payload.format)
+        existing_doc = None
+        if payload.existing and payload.mode == "keep_design":
+            existing_doc = yaml.safe_load(payload.existing)
+            if not isinstance(existing_doc, dict):
+                existing_doc = None
+        merged = merge_import(existing_doc, imported, mode=payload.mode)
+        if "cv" not in merged:
+            raise ValueError("Import resultaat mist 'cv'")
+        text = document_to_yaml(merged)
+        _parse_yaml(text)
+        return {
+            "ok": True,
+            "message": "Import geslaagd",
+            "document": merged,
+            "content": text,
+        }
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except yaml.YAMLError as exc:
+        raise HTTPException(status_code=400, detail=f"Ongeldige YAML: {exc}") from exc
+
+
+@app.post("/api/ai/chat")
+async def ai_chat_endpoint(payload: AiChatPayload) -> dict:
+    """Propose CV edits via an OpenAI-compatible provider (env-configured)."""
+    _parse_yaml(payload.content)
+    result = await asyncio.to_thread(
+        ai_chat,
+        message=payload.message,
+        yaml_content=payload.content,
+        job_description=payload.job_description,
+        history=payload.history,
+    )
+    return result
+
+
+@app.post("/api/ai/apply")
+async def ai_apply_endpoint(payload: AiApplyPayload) -> dict:
+    """Apply one AI proposal to the current YAML buffer."""
+    _parse_yaml(payload.content)
+    try:
+        text = apply_proposal(payload.content, payload.proposal)
+        _parse_yaml(text)
+        return {"ok": True, "message": "Voorstel toegepast", "content": text}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except yaml.YAMLError as exc:
+        raise HTTPException(status_code=400, detail=f"Ongeldige YAML na apply: {exc}") from exc
 
 
 @app.get("/api/wake")

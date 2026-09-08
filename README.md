@@ -20,7 +20,7 @@ Output staat in [`output/`](output/):
 
 ## Web editor (lokaal)
 
-Gelijkwaardige YAML + preview-UI bovenop dezelfde CLI/GitHub-pipeline (custom `solarnode`-theme blijft werken):
+Multi-panel editor (CV / Design / Locale / Settings / AI / Import) bovenop dezelfde CLI/GitHub-pipeline (custom `solarnode`-theme blijft werken). Form-modus en YAML-modus delen één `cv.yaml`.
 
 ```bash
 make install
@@ -29,8 +29,10 @@ make web
 
 Open [http://127.0.0.1:8765](http://127.0.0.1:8765):
 
-- YAML-editor voor [`cv.yaml`](cv.yaml)
-- **Valideren** / **Opslaan** (YAML) / **Render** (`output/` + R2 artifacts) / **Sync Git** (draft PR)
+- **CV / Design / Locale / Settings** — form panels (+ YAML-toggle)
+- **Import** — RenderCV YAML of JSON Resume (bestand of plakken)
+- **AI** — voorstellen met accept/reject via **Cloudflare Workers AI** (hosted editor) of lokaal `AI_BASE_URL` + `AI_API_KEY` (Workers AI REST / andere OpenAI-compatible provider); optioneel `AI_MODEL`
+- **Valideren** / **Opslaan** (YAML) / **Render** (`output/` + R2 artifacts) / **Publish** / **Sync Git** (draft PR)
 - **Check** — sollicitatie-checklist op YAML-inhoud
 - **Download PDF** — één klik om in te dienen
 - Preview van PNG (standaard), PDF of HTML
@@ -39,7 +41,7 @@ Sneltoetsen: `Ctrl+S` opslaan · `Ctrl+Enter` render · `Ctrl+Shift+C` check · 
 
 Happy path: bewerken → **Render** (R2 live) → **Sync Git** → merge → optioneel promote R2 (`R2_SEED_FORCE=1`).
 
-Dit is geen hosted SaaS zoals [rendercv.com](https://rendercv.com); de bron blijft deze repo + CI.
+Dit is geen hosted SaaS zoals [rendercv.com](https://rendercv.com); de bron blijft deze repo + CI. AI/import zijn editor-hulpfuncties, geen multi-user accountproduct.
 
 ## Cloudflare (Fase 1 — publieke CV-site)
 

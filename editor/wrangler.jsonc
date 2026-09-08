@@ -41,5 +41,8 @@
       "binding": "CV_DATA",
       "bucket_name": "solarnode-cv-data"
     }
-  ]
+  ],
+  "ai": {
+    "binding": "AI"
+  }
 }

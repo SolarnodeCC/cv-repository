@@ -1,18 +1,12 @@
 import { Container, ContainerProxy, getContainer } from "@cloudflare/containers";
+import allowlist from "../../shared/r2-allowlist.json";
 
 /** Only these R2 object keys may be read/written by the editor container. */
-const ALLOWED_R2_KEYS = new Set([
-  "cv.yaml",
-  "output/CV.pdf",
-  "output/CV.html",
-  "output/CV.md",
-  "output/CV.png",
-  "output/CV_1.png",
-]);
+const ALLOWED_R2_KEYS = new Set<string>(allowlist.keys);
 
 /**
  * Singleton CV editor container (RenderCV + FastAPI UI).
- * Intended for private use. Prefer Cloudflare Access in front of this Worker.
+ * Intended for private use. Cloudflare Access on this Worker is required.
  *
  * R2 access uses virtual host `cv.r2` via outbound interception.
  */

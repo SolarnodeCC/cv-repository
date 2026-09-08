@@ -1,4 +1,8 @@
-from web.r2_store import ALLOWED_KEYS, CONTENT_TYPES, _request
+from web.r2_store import ALLOWED_KEYS, CONTENT_TYPES, _ALLOWLIST_PATH, _request
+
+
+def test_allowlist_file_exists():
+    assert _ALLOWLIST_PATH.is_file()
 
 
 def test_allowed_keys_match_content_types():

@@ -1,0 +1,18 @@
+{
+  "keys": [
+    "cv.yaml",
+    "output/CV.pdf",
+    "output/CV.html",
+    "output/CV.md",
+    "output/CV.png",
+    "output/CV_1.png"
+  ],
+  "content_types": {
+    "cv.yaml": "text/yaml; charset=utf-8",
+    "output/CV.pdf": "application/pdf",
+    "output/CV.html": "text/html; charset=utf-8",
+    "output/CV.md": "text/markdown; charset=utf-8",
+    "output/CV.png": "image/png",
+    "output/CV_1.png": "image/png"
+  }
+}

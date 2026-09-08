@@ -1,4 +1,4 @@
-"""Sollicitatie-gereedheid: checks geïnspireerd op ATS/Resume.io/FlowCV-standaarden."""
+"""Sollicitatie-gereedheid: inhoudschecklist (contact, secties, metrics, placeholders)."""
 
 from __future__ import annotations
 
@@ -119,7 +119,7 @@ def evaluate_application_readiness(content: str) -> dict:
         bool(email) and "@" in email,
         "error",
         "E-mailadres",
-        "Zet een bereikbaar e-mailadres bovenaan (ATS + recruiter)."
+        "Zet een bereikbaar e-mailadres bovenaan (recruiter + systemen)."
         if not email or "@" not in email
         else f"E-mail: {email}",
     )
@@ -130,7 +130,7 @@ def evaluate_application_readiness(content: str) -> dict:
         bool(phone),
         "error",
         "Telefoonnummer",
-        "Voeg een telefoonnummer toe — Resume.io/FlowCV en NL-sollicitaties verwachten dit."
+        "Voeg een telefoonnummer toe — gangbaar bij NL-sollicitaties."
         if not phone
         else f"Telefoon: {phone}",
     )
@@ -209,7 +209,7 @@ def evaluate_application_readiness(content: str) -> dict:
         quantified and len(highlight_text) >= 3,
         "warn",
         "Meetbare highlights",
-        "Gebruik 3–5 bullets per recente rol met cijfers (%, #, tijd) — standaard bij Rezi/Teal/Jobscan."
+        "Gebruik 3–5 bullets per recente rol met cijfers (%, #, tijd)."
         if not (quantified and len(highlight_text) >= 3)
         else f"{len(highlight_text)} highlights met meetbare signalen",
     )
@@ -220,7 +220,7 @@ def evaluate_application_readiness(content: str) -> dict:
         bool(skill_keys),
         "error",
         "Vaardigheden",
-        "Voeg een Vaardigheden/Skills-sectie toe (ATS zoekt hier keywords)."
+        "Voeg een Vaardigheden/Skills-sectie toe (keywords voor matching)."
         if not skill_keys
         else "Vaardigheden-sectie aanwezig",
     )

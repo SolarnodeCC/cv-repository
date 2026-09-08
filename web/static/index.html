@@ -27,42 +27,60 @@
       <button type="button" id="btn-hydrate" class="btn ghost" title="Herlaad uit R2">R2 sync</button>
       <button type="button" id="btn-reload" class="btn ghost" title="Herlaad cv.yaml van schijf">Herladen</button>
       <button type="button" id="btn-validate" class="btn ghost">Valideren</button>
+      <button type="button" id="btn-check" class="btn ghost" title="Sollicitatie-check t.o.v. ATS/standaarden">Check</button>
       <button type="button" id="btn-save" class="btn secondary">Opslaan</button>
       <button type="button" id="btn-render" class="btn primary">Render</button>
+      <a id="btn-download" class="btn download" href="/api/download/pdf" download="CV.pdf" title="Download PDF om in te dienen">Download PDF</a>
     </div>
   </header>
 
-  <p class="lede">Bewerk <code>cv.yaml</code>, render met jullie custom <code>solarnode</code>-theme, en bekijk de PDF — zelfde pipeline als GitHub Actions.</p>
+  <p class="lede">Bewerk <code>cv.yaml</code>, check of je CV indientklaar is, render met het <code>solarnode</code>-theme, en download de PDF — zelfde pipeline als GitHub Actions. Sneltoetsen: <kbd>Ctrl</kbd>+<kbd>S</kbd> opslaan · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> render · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> check.</p>
 
-  <main class="workspace">
-    <section class="pane editor-pane" aria-label="YAML editor">
-      <div class="pane-head">
-        <h1>YAML</h1>
-        <span id="dirty-badge" class="badge" hidden>niet opgeslagen</span>
+  <div class="layout">
+    <aside id="checklist-panel" class="checklist" aria-label="Sollicitatie-check" hidden>
+      <div class="checklist-head">
+        <h2>Sollicitatie-check</h2>
+        <button type="button" id="btn-close-check" class="linkish" aria-label="Sluit checklist">Sluiten</button>
       </div>
-      <textarea id="yaml-source" aria-label="cv.yaml inhoud"></textarea>
-    </section>
+      <p id="checklist-summary" class="checklist-summary"></p>
+      <div class="score-row" aria-live="polite">
+        <div id="score-ring" class="score-ring" data-score="0"><span id="score-value">0</span></div>
+        <p id="score-label" class="score-label">Nog niet beoordeeld</p>
+      </div>
+      <ul id="checklist-items" class="checklist-items"></ul>
+      <p class="checklist-footnote">Gebaseerd op ATS-standaarden (één kolom, contact, metrics) en wat Resume.io / FlowCV / Rezi eisen vóór indienen.</p>
+    </aside>
 
-    <section class="pane preview-pane" aria-label="CV preview">
-      <div class="pane-head">
-        <h1>Preview</h1>
-        <div class="preview-tabs" role="tablist">
-          <button type="button" class="tab active" data-preview="pdf" role="tab" aria-selected="true">PDF</button>
-          <button type="button" class="tab" data-preview="png" role="tab" aria-selected="false">PNG</button>
-          <button type="button" class="tab" data-preview="html" role="tab" aria-selected="false">HTML</button>
+    <main class="workspace">
+      <section class="pane editor-pane" aria-label="YAML editor">
+        <div class="pane-head">
+          <h1>YAML</h1>
+          <span id="dirty-badge" class="badge" hidden>niet opgeslagen</span>
         </div>
-      </div>
-      <div class="preview-frame">
-        <iframe id="preview-pdf" title="PDF preview" hidden></iframe>
-        <img id="preview-png" alt="CV pagina preview" hidden />
-        <iframe id="preview-html" title="HTML preview" sandbox="allow-same-origin" hidden></iframe>
-        <div id="preview-empty" class="empty-state">
-          <p>Nog geen preview geladen.</p>
-          <p class="hint">Klik <strong>Render</strong> om PDF/PNG/HTML te bouwen vanuit de huidige YAML.</p>
+        <textarea id="yaml-source" aria-label="cv.yaml inhoud"></textarea>
+      </section>
+
+      <section class="pane preview-pane" aria-label="CV preview">
+        <div class="pane-head">
+          <h1>Preview</h1>
+          <div class="preview-tabs" role="tablist">
+            <button type="button" class="tab active" data-preview="png" role="tab" aria-selected="true">PNG</button>
+            <button type="button" class="tab" data-preview="pdf" role="tab" aria-selected="false">PDF</button>
+            <button type="button" class="tab" data-preview="html" role="tab" aria-selected="false">HTML</button>
+          </div>
         </div>
-      </div>
-    </section>
-  </main>
+        <div class="preview-frame">
+          <iframe id="preview-pdf" title="PDF preview" hidden></iframe>
+          <img id="preview-png" alt="CV pagina preview" hidden />
+          <iframe id="preview-html" title="HTML preview" sandbox="allow-same-origin" hidden></iframe>
+          <div id="preview-empty" class="empty-state">
+            <p>Nog geen preview geladen.</p>
+            <p class="hint">Klik <strong>Render</strong> om PDF/PNG/HTML te bouwen, of wacht tot bestaande <code>output/</code> laadt.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
 
   <footer class="statusbar">
     <span id="status-text">Klaar</span>

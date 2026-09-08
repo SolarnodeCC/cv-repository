@@ -8,10 +8,18 @@
   const previewPdf = document.getElementById("preview-pdf");
   const previewPng = document.getElementById("preview-png");
   const previewHtml = document.getElementById("preview-html");
+  const checklistPanel = document.getElementById("checklist-panel");
+  const checklistItems = document.getElementById("checklist-items");
+  const checklistSummary = document.getElementById("checklist-summary");
+  const scoreValue = document.getElementById("score-value");
+  const scoreRing = document.getElementById("score-ring");
+  const scoreLabel = document.getElementById("score-label");
+  const downloadBtn = document.getElementById("btn-download");
 
   let savedContent = "";
   let busy = false;
-  let activePreview = "pdf";
+  // PNG is the reliable visual preview (PDF iframes often blank in headless/some browsers).
+  let activePreview = "png";
 
   const editor = CodeMirror.fromTextArea(document.getElementById("yaml-source"), {
     mode: "yaml",
@@ -40,7 +48,7 @@
 
   function setBusy(next) {
     busy = next;
-    ["btn-hydrate", "btn-reload", "btn-validate", "btn-save", "btn-render"].forEach((id) => {
+    ["btn-hydrate", "btn-reload", "btn-validate", "btn-check", "btn-save", "btn-render"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.disabled = next;
     });
@@ -72,6 +80,50 @@
     return body;
   }
 
+  function renderChecklist(result) {
+    checklistPanel.hidden = false;
+    checklistSummary.textContent = result.summary;
+    scoreValue.textContent = String(result.score);
+    scoreRing.dataset.score = String(result.score);
+    scoreRing.style.setProperty("--score", String(result.score));
+    scoreLabel.textContent = result.ready
+      ? "Indientklaar"
+      : result.errors
+        ? "Blokkers oplossen"
+        : "Bijna klaar";
+    scoreRing.classList.toggle("ready", Boolean(result.ready));
+    scoreRing.classList.toggle("blocked", Boolean(result.errors));
+
+    checklistItems.innerHTML = "";
+    for (const check of result.checks || []) {
+      const li = document.createElement("li");
+      li.className = `check-item ${check.ok ? "ok" : check.severity}`;
+      li.innerHTML = `<span class="check-mark" aria-hidden="true"></span><div><strong>${check.label}</strong><p>${check.detail}</p></div>`;
+      checklistItems.appendChild(li);
+    }
+  }
+
+  async function runChecklist({ silent } = {}) {
+    if (!silent) setBusy(true);
+    if (!silent) setStatus("Sollicitatie-check…");
+    try {
+      const result = await api("/api/checklist", {
+        method: "POST",
+        body: JSON.stringify({ content: editor.getValue() }),
+      });
+      renderChecklist(result);
+      if (!silent) {
+        setStatus(result.summary, { ok: result.ready });
+      }
+      return result;
+    } catch (err) {
+      if (!silent) setStatus(err.message || "Check mislukt", { ok: false });
+      return null;
+    } finally {
+      if (!silent) setBusy(false);
+    }
+  }
+
   async function hydrateCv() {
     setBusy(true);
     setStatus("R2 sync…");
@@ -83,6 +135,7 @@
       markDirty();
       setStatus(result.message, { ok: true });
       await tryShowPreview(true);
+      await runChecklist({ silent: true });
     } catch (err) {
       setStatus(err.message || "R2 sync mislukt", { ok: false });
     } finally {
@@ -99,6 +152,7 @@
       markDirty();
       setStatus("cv.yaml geladen");
       await tryShowPreview(false);
+      await runChecklist({ silent: true });
     } catch (err) {
       setStatus(err.message || "Laden mislukt", { ok: false });
     } finally {
@@ -118,6 +172,7 @@
       savedContent = content;
       markDirty();
       setStatus(result.message, { ok: true });
+      await runChecklist({ silent: true });
     } catch (err) {
       setStatus(err.message || "Opslaan mislukt", { ok: false });
     } finally {
@@ -152,12 +207,14 @@
       if (result.ok) {
         savedContent = editor.getValue();
         markDirty();
+        downloadBtn.href = `/api/download/pdf?t=${Date.now()}`;
         try {
           await showPreview(activePreview, true);
         } catch {
           hideAllPreviews();
           previewEmpty.hidden = false;
         }
+        await runChecklist({ silent: true });
       }
       setStatus(result.message, { ok: result.ok, detail: result.detail });
     } catch (err) {
@@ -178,6 +235,15 @@
     try {
       await showPreview(activePreview, bust);
     } catch {
+      // Prefer PNG fallback when PDF iframe is unavailable.
+      if (activePreview !== "png") {
+        try {
+          await showPreview("png", bust);
+          return;
+        } catch {
+          /* fall through */
+        }
+      }
       hideAllPreviews();
       previewEmpty.hidden = false;
     }
@@ -192,6 +258,7 @@
       if (!status.pdf) throw new Error("geen pdf");
       previewPdf.src = `/api/preview/pdf${stamp}`;
       previewPdf.hidden = false;
+      downloadBtn.classList.toggle("disabled", false);
       return;
     }
     if (kind === "png") {
@@ -239,6 +306,10 @@
   document.getElementById("btn-save").addEventListener("click", saveCv);
   document.getElementById("btn-validate").addEventListener("click", validateCv);
   document.getElementById("btn-render").addEventListener("click", renderCv);
+  document.getElementById("btn-check").addEventListener("click", () => runChecklist());
+  document.getElementById("btn-close-check").addEventListener("click", () => {
+    checklistPanel.hidden = true;
+  });
 
   function relayoutEditor() {
     const wrap = editor.getWrapperElement().parentElement;
@@ -260,6 +331,10 @@
     if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
       event.preventDefault();
       if (!busy) renderCv();
+    }
+    if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "c") {
+      event.preventDefault();
+      if (!busy) runChecklist();
     }
   });
 

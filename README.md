@@ -31,7 +31,11 @@ Open [http://127.0.0.1:8765](http://127.0.0.1:8765):
 
 - YAML-editor voor [`cv.yaml`](cv.yaml)
 - **Valideren** / **Opslaan** / **Render** (schrijft naar `output/`)
-- Preview van PDF, PNG of HTML
+- **Check** — sollicitatie-score t.o.v. ATS/standaarden (telefoon, LinkedIn, metrics, placeholders, …)
+- **Download PDF** — één klik om in te dienen
+- Preview van PNG (standaard), PDF of HTML
+
+Sneltoetsen: `Ctrl+S` opslaan · `Ctrl+Enter` render · `Ctrl+Shift+C` check.
 
 Dit is geen hosted SaaS zoals [rendercv.com](https://rendercv.com); de bron blijft deze repo + CI.
 

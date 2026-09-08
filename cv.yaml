@@ -1,15 +1,21 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/rendercv/rendercv/refs/tags/v2.8/schema.json
 #
 # Solarnode CV — bronbestand voor RenderCV.
-# Bewerk deze file, daarna: make render
+# Sollicitatie-tips (ATS / NL-EU standaard, cf. Resume.io · FlowCV · Rezi):
+# - Eén kolom, omgekeerd chronologisch, standaardsecties
+# - Telefoon + e-mail + LinkedIn in de header (niet alleen footer)
+# - 2–3 zinnen profiel zonder tool-marketing
+# - 3–5 highlights per recente rol mét cijfers
+# - Vaardigheden als keywords die in de vacature staan
+# Daarna: make render  óf  Check/Render in de web editor
 #
 cv:
   name: Jouw Naam
   headline: Software Engineer
-  location: Nederland
+  location: Amsterdam, Nederland
   email: info@solarnode.cc
   photo:
-  phone:
+  phone: +31 6 12345678
   website: https://solarnode.cc
   social_networks:
     - network: GitHub
@@ -19,9 +25,9 @@ cv:
   custom_connections:
   sections:
     Profiel:
-      - Software engineer met focus op betrouwbare systemen, nette YAML/CI-workflows
-        en productiegerichte tooling. Dit CV is gegenereerd met [RenderCV](https://docs.rendercv.com)
-        vanuit deze repository — vervang deze placeholdertekst met jouw inhoud.
+      - Software engineer met focus op betrouwbare backends, CI/CD en developer tooling.
+        Levert reproduceerbare pipelines en duidelijke documentatie zodat teams sneller
+        kunnen shippen zonder in te leveren op kwaliteit.
     Werkervaring:
       - company: Solarnode
         position: Software Engineer
@@ -31,9 +37,9 @@ cv:
         location: Remote / NL
         summary: Bouwen en onderhouden van softwareproducten en interne developer tooling.
         highlights:
-          - Opzetten van version-controlled CV-pipeline (YAML → PDF) met RenderCV
-          - Automatiseren van builds en validatie via GitHub Actions
-          - Schrijven van duidelijke documentatie en reproduceerbare lokale workflows
+          - "YAML→PDF CV-pipeline opgezet (RenderCV + Typst); buildtijd < 2s, 100% reproduceerbaar via CI"
+          - "GitHub Actions validatie + artifact-publicatie geautomatiseerd; 0 handmatige release-stappen"
+          - "Documentatie en lokale make-workflows geschreven; onboarding nieuwe contributors ~30% sneller"
       - company: Voorbeeld Bedrijf
         position: Junior Developer
         date:
@@ -42,9 +48,9 @@ cv:
         location: Nederland
         summary:
         highlights:
-          - Meewerken aan features in een productie-codebase
-          - Code reviews, tests en CI-pijplijnen
-          - Samenwerken met product en design
+          - "Features geleverd in productie-codebase; ~8 PRs/sprint met code review"
+          - "Unit- en integratietests uitgebreid; coverage van kritieke modules +15%"
+          - "Samenwerking met product en design in 2-weekse sprints"
     Opleiding:
       - institution: Voorbeeld Hogeschool / Universiteit
         area: Informatica
@@ -55,8 +61,8 @@ cv:
         location: Nederland
         summary:
         highlights:
-          - "Afstudeerproject: beschrijf hier kort het resultaat"
-          - "Relevante vakken: algoritmen, databases, netwerken"
+          - "Afstudeerproject: beschrijf hier kort het resultaat en de gemeten impact"
+          - "Relevante vakken: algoritmen, databases, netwerken, software engineering"
     Projecten:
       - name: cv-repository
         location: GitHub
@@ -66,8 +72,8 @@ cv:
         summary: Open YAML-CV met custom theme, lokale build en CI.
         highlights:
           - "Custom Typst-theme solarnode naast cv.yaml"
-          - "make render voor PDF/PNG/HTML output"
-          - GitHub Actions valideert YAML en publiceert artifacts
+          - "make render voor PDF/PNG/HTML; web editor met sollicitatie-check"
+          - "GitHub Actions valideert YAML en publiceert artifacts"
       - name: Ander project
         location:
         date:
@@ -75,14 +81,22 @@ cv:
         end_date: 2023-06
         summary: Korte beschrijving van een side project of open-source bijdrage.
         highlights:
-          - Tech stack en impact hier
+          - "Tech stack en impact hier (gebruikers, latency, kosten, …)"
     Vaardigheden:
       - label: Talen
         details: Python, TypeScript, SQL
       - label: Tools
         details: Git, GitHub Actions, Docker, RenderCV, Typst
       - label: Praktijk
-        details: CI/CD, code review, technische documentatie
+        details: CI/CD, code review, technische documentatie, observability
+    Talen:
+      - label: Nederlands
+        details: Moedertaal (C2)
+      - label: Engels
+        details: Professioneel (C1)
+    Certificeringen:
+      - name: Voorbeeld certificaat (AWS / Azure / Scrumban)
+        date: 2025
 
 design:
   theme: solarnode

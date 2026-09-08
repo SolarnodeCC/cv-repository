@@ -15,6 +15,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from web.checklist import evaluate_application_readiness
 from web.r2_store import hydrate_from_r2, publish_workspace
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -190,6 +191,18 @@ async def publish_cv() -> StatusResponse:
     return StatusResponse(ok=True, message=f"Gepubliceerd naar R2: {', '.join(published)}")
 
 
+@app.post("/api/checklist")
+async def checklist(payload: CvPayload | None = None) -> dict:
+    """Score CV against ATS / successful-application standards (Resume.io, FlowCV, Rezi)."""
+    content = payload.content if payload is not None else (
+        CV_PATH.read_text(encoding="utf-8") if CV_PATH.is_file() else ""
+    )
+    if not content.strip():
+        raise HTTPException(status_code=400, detail="Geen YAML om te beoordelen")
+    _parse_yaml(content)
+    return evaluate_application_readiness(content)
+
+
 @app.get("/api/preview/status")
 async def preview_status() -> dict:
     pngs = sorted(OUTPUT_DIR.glob("CV_*.png"))
@@ -205,7 +218,25 @@ async def preview_pdf() -> FileResponse:
     path = OUTPUT_DIR / "CV.pdf"
     if not path.is_file():
         raise HTTPException(status_code=404, detail="Nog geen PDF — klik eerst op Render")
-    return FileResponse(path, media_type="application/pdf", filename="CV.pdf")
+    return FileResponse(
+        path,
+        media_type="application/pdf",
+        filename="CV.pdf",
+        content_disposition_type="inline",
+    )
+
+
+@app.get("/api/download/pdf")
+async def download_pdf() -> FileResponse:
+    path = OUTPUT_DIR / "CV.pdf"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Nog geen PDF — klik eerst op Render")
+    return FileResponse(
+        path,
+        media_type="application/pdf",
+        filename="CV.pdf",
+        content_disposition_type="attachment",
+    )
 
 
 @app.get("/api/preview/png")

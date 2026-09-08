@@ -84,7 +84,7 @@ Bucket **`solarnode-cv-data`**:
 
 GitHub blijft de version-control bron; R2 is de live runtime/publicatie-laag. Allowlist: [`shared/r2-allowlist.json`](shared/r2-allowlist.json).
 
-Hosted editor Git sync: zet Worker-secret `GITHUB_TOKEN` (scopes: `contents:write`, `pull_requests:write`) — zie [`editor/README.md`](editor/README.md). Lokaal: exporteer `GITHUB_TOKEN` vóór `make web`.
+Hosted editor Git sync + Access: zie [`editor/README.md`](editor/README.md) (secrets `CV_EDITOR_GITHUB_TOKEN`, `ACCESS_ALLOWED_EMAILS`). Deploy draait `post-deploy-ops` automatisch.
 
 Roadmap (vervolgfasen): [`docs/architectuur-en-roadmap.md`](docs/architectuur-en-roadmap.md).
 

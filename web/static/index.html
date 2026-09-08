@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Solarnode CV Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/lib/codemirror.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/theme/material-darker.min.css" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">Solarnode</span>
+      <span class="brand-sub">CV Editor</span>
+    </div>
+    <div class="actions">
+      <button type="button" id="btn-reload" class="btn ghost" title="Herlaad cv.yaml van schijf">Herladen</button>
+      <button type="button" id="btn-validate" class="btn ghost">Valideren</button>
+      <button type="button" id="btn-save" class="btn secondary">Opslaan</button>
+      <button type="button" id="btn-render" class="btn primary">Render</button>
+    </div>
+  </header>
+
+  <p class="lede">Bewerk <code>cv.yaml</code>, render met jullie custom <code>solarnode</code>-theme, en bekijk de PDF — zelfde pipeline als GitHub Actions.</p>
+
+  <main class="workspace">
+    <section class="pane editor-pane" aria-label="YAML editor">
+      <div class="pane-head">
+        <h1>YAML</h1>
+        <span id="dirty-badge" class="badge" hidden>niet opgeslagen</span>
+      </div>
+      <textarea id="yaml-source" aria-label="cv.yaml inhoud"></textarea>
+    </section>
+
+    <section class="pane preview-pane" aria-label="CV preview">
+      <div class="pane-head">
+        <h1>Preview</h1>
+        <div class="preview-tabs" role="tablist">
+          <button type="button" class="tab active" data-preview="pdf" role="tab" aria-selected="true">PDF</button>
+          <button type="button" class="tab" data-preview="png" role="tab" aria-selected="false">PNG</button>
+          <button type="button" class="tab" data-preview="html" role="tab" aria-selected="false">HTML</button>
+        </div>
+      </div>
+      <div class="preview-frame">
+        <iframe id="preview-pdf" title="PDF preview" hidden></iframe>
+        <img id="preview-png" alt="CV pagina preview" hidden />
+        <iframe id="preview-html" title="HTML preview" hidden></iframe>
+        <div id="preview-empty" class="empty-state">
+          <p>Nog geen preview geladen.</p>
+          <p class="hint">Klik <strong>Render</strong> om PDF/PNG/HTML te bouwen vanuit de huidige YAML.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="statusbar">
+    <span id="status-text">Klaar</span>
+    <button type="button" id="btn-toggle-log" class="linkish" hidden>Toon log</button>
+  </footer>
+  <pre id="log-panel" class="log-panel" hidden></pre>
+
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/lib/codemirror.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/mode/yaml/yaml.min.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

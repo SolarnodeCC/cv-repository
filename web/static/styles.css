@@ -24,14 +24,15 @@
 html,
 body {
   margin: 0;
-  min-height: 100%;
+  height: 100%;
+  max-height: 100vh;
+  overflow: hidden;
 }
 
 body {
   font-family: var(--font-ui);
   color: var(--paper);
   background: var(--navy-deep);
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -144,18 +145,21 @@ body {
 }
 
 .workspace {
-  flex: 1;
+  flex: 1 1 auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
   padding: 0 1.25rem 0.75rem;
   min-height: 0;
+  max-height: 100%;
 }
 
 .pane {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  height: 100%;
+  overflow: hidden;
   border: 1px solid var(--line);
   background: rgba(7, 24, 36, 0.55);
   backdrop-filter: blur(8px);
@@ -219,8 +223,8 @@ body {
 
 .CodeMirror {
   flex: 1;
-  height: auto !important;
-  min-height: 28rem;
+  height: 100% !important;
+  min-height: 0;
   font-family: var(--font-mono);
   font-size: 0.84rem;
   line-height: 1.45;
@@ -228,7 +232,7 @@ body {
 }
 
 .CodeMirror-scroll {
-  min-height: 28rem;
+  min-height: 0;
 }
 
 .editor-pane .CodeMirror {
@@ -238,7 +242,7 @@ body {
 .preview-frame {
   position: relative;
   flex: 1;
-  min-height: 28rem;
+  min-height: 0;
   background:
     linear-gradient(180deg, rgba(15, 48, 80, 0.25), transparent 40%),
     repeating-linear-gradient(
@@ -249,20 +253,28 @@ body {
   overflow: auto;
 }
 
-.preview-frame iframe,
-.preview-frame img {
+.preview-frame [hidden] {
+  display: none !important;
+}
+
+.preview-frame iframe {
   display: block;
   width: 100%;
   height: 100%;
-  min-height: 28rem;
+  min-height: 100%;
   border: 0;
   background: var(--paper);
 }
 
 .preview-frame img {
-  object-fit: contain;
-  padding: 1rem;
-  background: #1a2430;
+  display: block;
+  width: auto;
+  max-width: calc(100% - 2rem);
+  height: auto;
+  margin: 1rem auto;
+  border: 0;
+  background: #fff;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
 }
 
 .empty-state {
@@ -362,13 +374,26 @@ body {
 @media (max-width: 960px) {
   .workspace {
     grid-template-columns: 1fr;
+    overflow: auto;
   }
 
-  .CodeMirror,
-  .CodeMirror-scroll,
-  .preview-frame,
-  .preview-frame iframe,
-  .preview-frame img {
-    min-height: 20rem;
+  html,
+  body {
+    max-height: none;
+    overflow: auto;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .pane {
+    min-height: 22rem;
+  }
+
+  .CodeMirror {
+    min-height: 18rem;
+  }
+
+  .preview-frame {
+    min-height: 18rem;
   }
 }

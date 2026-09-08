@@ -20,7 +20,7 @@
     lineWrapping: true,
     indentUnit: 2,
     tabSize: 2,
-    viewportMargin: Infinity,
+    viewportMargin: 80,
   });
 
   function setStatus(message, { ok, detail } = {}) {
@@ -212,6 +212,18 @@
   document.getElementById("btn-save").addEventListener("click", saveCv);
   document.getElementById("btn-validate").addEventListener("click", validateCv);
   document.getElementById("btn-render").addEventListener("click", renderCv);
+
+  function relayoutEditor() {
+    const wrap = editor.getWrapperElement().parentElement;
+    if (wrap) {
+      const head = wrap.querySelector(".pane-head");
+      const available = Math.max(200, wrap.clientHeight - (head ? head.offsetHeight : 0));
+      editor.setSize("100%", available);
+    }
+    editor.refresh();
+  }
+  window.addEventListener("resize", relayoutEditor);
+  requestAnimationFrame(relayoutEditor);
 
   window.addEventListener("keydown", (event) => {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {

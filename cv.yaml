@@ -10,12 +10,12 @@
 # Daarna: make render  óf  Check/Render in de web editor
 #
 cv:
-  name: Jouw Naam
-  headline: Software Engineer
-  location: Amsterdam, Nederland
-  email: info@solarnode.cc
+  name: Remco Oostelaar
+  headline: Transformation & Consulting Leader | AI Innovation | Service Management | Digital Delivery
+  location: Amersfoort, Nederland
+  email: oostelaar@hotmail.com
   photo:
-  phone: +31 6 12345678
+  phone: +31 6 15433453
   website: https://solarnode.cc
   social_networks:
     - network: GitHub
@@ -25,78 +25,132 @@ cv:
   custom_connections:
   sections:
     Profiel:
-      - Software engineer met focus op betrouwbare backends, CI/CD en developer tooling.
-        Levert reproduceerbare pipelines en duidelijke documentatie zodat teams sneller
-        kunnen shippen zonder in te leveren op kwaliteit.
+      - Transformation and consulting leader with 15+ years across quality engineering,
+        service management and digital delivery. Combines operational leadership of large
+        consulting practices with hands-on innovation, AI adoption and enterprise transformation.
     Werkervaring:
-      - company: Solarnode
-        position: Software Engineer
+      - company: Capgemini
+        position: Operations Manager & Transformation Innovation Office Lead
         date:
-        start_date: 2024-01
+        start_date: 2024
         end_date: present
-        location: Remote / NL
-        summary: Bouwen en onderhouden van softwareproducten en interne developer tooling.
+        location: Utrecht, Netherlands
+        summary: Responsible for operational leadership, organizational development and innovation strategy for a 120+ consultant ADM organization while leading the Transformation Innovation Office.
         highlights:
-          - "YAML→PDF CV-pipeline opgezet (RenderCV + Typst); buildtijd < 2s, 100% reproduceerbaar via CI"
-          - "GitHub Actions validatie + artifact-publicatie geautomatiseerd; 0 handmatige release-stappen"
-          - "Documentatie en lokale make-workflows geschreven; onboarding nieuwe contributors ~30% sneller"
-      - company: Voorbeeld Bedrijf
-        position: Junior Developer
+          - "Led operational performance, workforce planning and capability development for a practice of over 120 consultants"
+          - "Established the Transformation Innovation Office as a bridge between innovation, delivery and business development"
+          - "Developed AI adoption initiatives, learning programs and innovation propositions"
+          - "Implemented KPI-driven governance models covering delivery performance and organizational maturity"
+          - "Managed recruitment, talent development and career growth across the practice"
+      - company: Capgemini
+        position: Cluster Manager Service Management & Quality Engineering
         date:
-        start_date: 2022-09
-        end_date: 2023-12
-        location: Nederland
-        summary:
+        start_date: 2021
+        end_date: 2024
+        location: Utrecht, Netherlands
+        summary: Led a consulting cluster supporting enterprise clients undergoing service transformation and Agile modernization.
         highlights:
-          - "Features geleverd in productie-codebase; ~8 PRs/sprint met code review"
-          - "Unit- en integratietests uitgebreid; coverage van kritieke modules +15%"
-          - "Samenwerking met product en design in 2-weekse sprints"
-    Opleiding:
-      - institution: Voorbeeld Hogeschool / Universiteit
-        area: Informatica
-        degree: BSc
+          - "Managed a consulting organization of approximately 90 professionals"
+          - "Advised enterprise clients on quality engineering and service transformation"
+          - "Led capability development and modernization of service offerings"
+          - "Managed the strategic Tricentis alliance in the Netherlands"
+          - "Supported bids, proposals and business growth initiatives"
+      - company: CMA CGM
+        position: QA Test Manager
         date:
-        start_date: 2018-09
-        end_date: 2022-06
-        location: Nederland
-        summary:
+        start_date: 2021
+        end_date: 2022
+        location: Marseille, France
+        summary: Led quality assurance activities for a global SAP Finance transformation.
         highlights:
-          - "Afstudeerproject: beschrijf hier kort het resultaat en de gemeten impact"
-          - "Relevante vakken: algoritmen, databases, netwerken, software engineering"
+          - "Managed a 15-person international quality assurance team"
+          - "Defined end-to-end test strategy and governance"
+          - "Delivered quality assurance across multiple rollout regions"
+      - company: Capgemini
+        position: Director Digital Assurance & Quality Engineering
+        date:
+        start_date: 2019
+        end_date: 2021
+        location: Sydney, Australia
+        summary: Led a specialist consulting practice focused on digital assurance and innovation-driven quality engineering.
+        highlights:
+          - "Repositioned the practice toward Digital Assurance and Quality Engineering"
+          - "Led a team of approximately 50 professionals"
+          - "Built strategic alliances with Atlassian, HashiCorp, Docker and JFrog"
+          - "Developed specialist consulting capabilities across SAP, Salesforce and DevOps domains"
+          - "Supported client growth and solution development activities"
+      - company: EnergyAustralia
+        position: Program Test Manager
+        date:
+        start_date: 2020-02
+        end_date: 2020-10
+        location: Sydney, Australia
+        summary: Responsible for the testing strategy of a SAP SuccessFactors transformation.
+        highlights:
+          - "Developed testing strategy for over 2,500 employees"
+          - "Coordinated delivery across HR, Finance, IT and vendors"
+          - "Successfully delivered major payroll transformation milestones"
+      - company: Lendlease
+        position: Service Delivery Manager & Chapter Lead
+        date:
+        start_date: 2018-01
+        end_date: 2020-06
+        location: Sydney, Australia
+        summary: Led service modernization and continuous delivery initiatives.
+        highlights:
+          - "Turned around an underperforming engagement into a profitable delivery model"
+          - "Led multidisciplinary delivery teams"
+          - "Introduced continuous testing and CI/CD practices"
+          - "Held P&L accountability"
+      - company: Capgemini
+        position: Senior Manager Testing Services
+        date:
+        start_date: 2012-02
+        end_date: 2019-06
+        location: Australia
+        summary: Led testing and quality engineering services across multiple industries including financial services, telecommunications and real estate.
+        highlights:
+          - "Built and scaled testing capabilities and consulting teams"
+          - "Led recruitment, coaching and capability development initiatives"
+          - "Standardized TMAP-based quality approaches across programs"
+          - "Strengthened client relationships through consistent delivery performance"
+      - company: Capgemini, Lendlease, Telstra, Canon Europe and Ricoh Europe
+        position: Program Test Manager & Transformation Consultant
+        date:
+        start_date: 2006
+        end_date: 2012
+        location: Netherlands, United Kingdom and Australia
+        summary: Delivered enterprise transformation programs across multiple industries.
+        highlights:
+          - "Led large-scale SAP, Oracle EBS, Salesforce and financial transformation initiatives"
+          - "Managed international delivery teams across Europe, Asia and Australia"
+          - "Delivered complex programs in multi-vendor environments"
+          - "Managed budgets up to USD 10 million"
     Projecten:
       - name: cv-repository
         location: GitHub
         date: 2026
         start_date:
         end_date:
-        summary: Open YAML-CV met custom theme, lokale build en CI.
+        summary: Open YAML-CV met custom Solarnode theme, lokale build en CI-publicatie.
         highlights:
           - "Custom Typst-theme solarnode naast cv.yaml"
           - "make render voor PDF/PNG/HTML; web editor met sollicitatie-check"
           - "GitHub Actions valideert YAML en publiceert artifacts"
-      - name: Ander project
-        location:
-        date:
-        start_date: 2023-01
-        end_date: 2023-06
-        summary: Korte beschrijving van een side project of open-source bijdrage.
-        highlights:
-          - "Tech stack en impact hier (gebruikers, latency, kosten, …)"
     Vaardigheden:
-      - label: Talen
-        details: Python, TypeScript, SQL
-      - label: Tools
-        details: Git, GitHub Actions, Docker, RenderCV, Typst
-      - label: Praktijk
-        details: CI/CD, code review, technische documentatie, observability
+      - label: Leadership
+        details: Operational management, practice leadership, P&L, talent development, workforce planning
+      - label: Domains
+        details: Quality Engineering, Service Management, Digital Assurance, Enterprise Transformation, AI Innovation
+      - label: Platforms & Alliances
+        details: SAP, Salesforce, Tricentis, Atlassian, HashiCorp, Docker, JFrog, DevOps, CI/CD
+      - label: Methods
+        details: TMAP, Agile, KPI governance, continuous testing, multi-vendor delivery
     Talen:
       - label: Nederlands
         details: Moedertaal (C2)
       - label: Engels
         details: Professioneel (C1)
-    Certificeringen:
-      - name: Voorbeeld certificaat (AWS / Azure / Scrumban)
-        date: 2025
 
 design:
   theme: solarnode
@@ -173,4 +227,4 @@ settings:
     dont_generate_pdf: false
     dont_generate_png: false
   bold_keywords: []
-  pdf_title: CV
+  pdf_title: CV Remco Oostelaar

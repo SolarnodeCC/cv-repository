@@ -6,7 +6,7 @@ PYTHON ?= python3
 WEB_HOST ?= 127.0.0.1
 WEB_PORT ?= 8765
 
-.PHONY: help install render watch clean validate doctor web site-sync site-deploy site-dev editor-deploy
+.PHONY: help install render watch clean validate test doctor web site-sync site-deploy site-dev editor-deploy
 
 help:
 	@echo "Targets:"
@@ -14,6 +14,7 @@ help:
 	@echo "  make render         Build PDF/PNG/HTML/Typst into $(OUTPUT)/"
 	@echo "  make watch          Re-render on cv.yaml changes"
 	@echo "  make validate       Dry-run render (exit non-zero on invalid YAML)"
+	@echo "  make test           Run full pytest suite (web/)"
 	@echo "  make web            Start local CV editor UI (http://$(WEB_HOST):$(WEB_PORT))"
 	@echo "  make site-sync      Copy $(OUTPUT)/ into site/public for Cloudflare"
 	@echo "  make site-dev       Local Workers preview of the CV site"
@@ -24,6 +25,7 @@ help:
 
 install:
 	$(PYTHON) -m pip install -r requirements.txt
+	$(PYTHON) -m pip install -r requirements-dev.txt
 
 render: doctor
 	$(RENDERCV) render "$(CV)"
@@ -40,6 +42,9 @@ validate:
 		--output-folder /tmp/rendercv-validate-$$$$
 	@rm -rf /tmp/rendercv-validate-$$$$
 	@echo "cv.yaml is valid."
+
+test:
+	$(PYTHON) -m pytest web/ -q
 
 web:
 	@echo "Solarnode CV Editor → http://$(WEB_HOST):$(WEB_PORT)"

@@ -6,6 +6,7 @@ on:
     paths:
       - "editor/**"
       - "web/**"
+      - "shared/**"
       - "solarnode/**"
       - "cv.yaml"
       - "requirements.txt"

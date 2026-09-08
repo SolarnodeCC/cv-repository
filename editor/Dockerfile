@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY cv.yaml /app/cv.yaml
 COPY solarnode /app/solarnode
+COPY shared /app/shared
 COPY web /app/web
 # Minimal output dir; live artifacts come from R2 hydrate.
 RUN mkdir -p /app/output \

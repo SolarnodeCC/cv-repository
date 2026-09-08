@@ -4,6 +4,7 @@
   "scripts": {
     "sync": "node ./scripts/sync-output.mjs",
     "seed-r2": "node ./scripts/seed-r2.mjs",
+    "seed-r2:force": "node ./scripts/seed-r2.mjs --force",
     "deploy": "npm run sync && wrangler deploy && npm run seed-r2",
     "dev": "npm run sync && wrangler dev",
     "typecheck": "tsc --noEmit"

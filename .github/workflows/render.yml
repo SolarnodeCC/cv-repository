@@ -7,8 +7,14 @@ on:
       - "cv.yaml"
       - "solarnode/**"
       - "requirements.txt"
+      - "shared/**"
       - ".github/workflows/render.yml"
   workflow_dispatch:
+    inputs:
+      force_r2_seed:
+        description: "Overwrite existing R2 keys (promote from Git)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -73,6 +79,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          R2_SEED_FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.force_r2_seed && '1' || '0' }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
             echo "Skipping R2 seed (Cloudflare secrets not configured)"
@@ -89,7 +96,11 @@ jobs:
             echo ""
             echo "Download the **cv-output** artifact from this run (PDF, HTML, PNG, Typst)."
             echo ""
-            echo "R2 bucket \`solarnode-cv-data\` was seeded for the public Worker."
+            if [ "${{ github.event.inputs.force_r2_seed }}" = "true" ]; then
+              echo "R2 seed ran with **force** (promote from Git)."
+            else
+              echo "R2 bucket \`solarnode-cv-data\` bootstrap-seed (existing keys skipped)."
+            fi
             echo ""
             echo "Local equivalent: \`make render\` → \`output/CV.pdf\`"
           } >> "$GITHUB_STEP_SUMMARY"

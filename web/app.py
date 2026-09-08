@@ -47,7 +47,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="Solarnode CV Editor", version="0.3.0", lifespan=lifespan)
+app = FastAPI(title="Solarnode CV Editor", version="0.4.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
@@ -152,12 +152,19 @@ async def hydrate_cv() -> StatusResponse:
 
 @app.put("/api/cv", response_model=StatusResponse)
 async def put_cv(payload: CvPayload) -> StatusResponse:
+    """Save YAML only. Does not publish PDF/HTML/PNG — use Render for that."""
     _parse_yaml(payload.content)
     text = payload.content if payload.content.endswith("\n") else payload.content + "\n"
     CV_PATH.write_text(text, encoding="utf-8")
-    published = await publish_workspace(cv_path=CV_PATH, output_dir=OUTPUT_DIR)
-    suffix = f" (R2: {', '.join(published)})" if published else ""
-    return StatusResponse(ok=True, message=f"cv.yaml opgeslagen{suffix}")
+    published = await publish_workspace(
+        cv_path=CV_PATH, output_dir=OUTPUT_DIR, artifacts=False
+    )
+    if published:
+        return StatusResponse(
+            ok=True,
+            message="cv.yaml opgeslagen (R2: yaml). Publieke PDF vernieuwt pas na Render.",
+        )
+    return StatusResponse(ok=True, message="cv.yaml opgeslagen (lokaal)")
 
 
 def _write_buffer(content: str) -> Path:
@@ -236,7 +243,7 @@ async def publish_cv() -> StatusResponse:
 
 @app.post("/api/checklist")
 async def checklist(payload: CvPayload | None = None) -> dict:
-    """Score CV against ATS / successful-application standards (Resume.io, FlowCV, Rezi)."""
+    """Sollicitatie-checklist op YAML-inhoud (geen ATS-PDF-engine)."""
     content = payload.content if payload is not None else (
         CV_PATH.read_text(encoding="utf-8") if CV_PATH.is_file() else ""
     )

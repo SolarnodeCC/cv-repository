@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import urllib.error
@@ -15,25 +16,19 @@ R2_BASE = os.environ.get("R2_HTTP_BASE", "http://cv.r2").rstrip("/")
 # Off by default (local `make web`); Container sets R2_SYNC=1.
 R2_ENABLED = os.environ.get("R2_SYNC", "0") not in {"0", "false", "False"}
 
-ALLOWED_KEYS = frozenset(
-    {
-        "cv.yaml",
-        "output/CV.pdf",
-        "output/CV.html",
-        "output/CV.md",
-        "output/CV.png",
-        "output/CV_1.png",
-    }
-)
+_ALLOWLIST_PATH = Path(__file__).resolve().parent.parent / "shared" / "r2-allowlist.json"
 
-CONTENT_TYPES = {
-    "cv.yaml": "text/yaml; charset=utf-8",
-    "output/CV.pdf": "application/pdf",
-    "output/CV.html": "text/html; charset=utf-8",
-    "output/CV.md": "text/markdown; charset=utf-8",
-    "output/CV.png": "image/png",
-    "output/CV_1.png": "image/png",
-}
+
+def _load_allowlist() -> tuple[frozenset[str], dict[str, str]]:
+    data = json.loads(_ALLOWLIST_PATH.read_text(encoding="utf-8"))
+    keys = frozenset(data["keys"])
+    content_types = {str(k): str(v) for k, v in data["content_types"].items()}
+    if set(content_types) != set(keys):
+        raise RuntimeError("shared/r2-allowlist.json: keys and content_types must match")
+    return keys, content_types
+
+
+ALLOWED_KEYS, CONTENT_TYPES = _load_allowlist()
 
 
 def _request(method: str, key: str, data: bytes | None = None, content_type: str | None = None) -> tuple[int, bytes]:
@@ -111,8 +106,17 @@ async def hydrate_from_r2(*, cv_path: Path, output_dir: Path) -> dict:
     return result
 
 
-async def publish_workspace(*, cv_path: Path, output_dir: Path) -> list[str]:
-    """Push local cv.yaml + output artifacts to R2 for the public site."""
+async def publish_workspace(
+    *,
+    cv_path: Path,
+    output_dir: Path,
+    artifacts: bool = True,
+) -> list[str]:
+    """Push local cv.yaml (and optionally rendered artifacts) to R2.
+
+    Save-only flows should pass ``artifacts=False`` so a stale PDF is never
+    published as if it matched the new YAML. Render/publish pass ``artifacts=True``.
+    """
     published: list[str] = []
     if not R2_ENABLED:
         return published
@@ -120,6 +124,9 @@ async def publish_workspace(*, cv_path: Path, output_dir: Path) -> list[str]:
     if cv_path.is_file():
         if await r2_put("cv.yaml", cv_path.read_bytes()):
             published.append("cv.yaml")
+
+    if not artifacts:
+        return published
 
     mapping: list[tuple[Path, str]] = [
         (output_dir / "CV.pdf", "output/CV.pdf"),

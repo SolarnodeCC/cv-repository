@@ -42,6 +42,29 @@ def test_ai_configured_via_proxy(monkeypatch):
     assert ai_configured() is True
 
 
+def test_default_model_workers_ai(monkeypatch):
+    from web import ai_assistant
+
+    monkeypatch.delenv("AI_MODEL", raising=False)
+    monkeypatch.delenv("OPENAI_MODEL", raising=False)
+    monkeypatch.setenv("AI_BASE_URL", "http://ai.api/v1")
+    assert ai_assistant._model() == ai_assistant.DEFAULT_WORKERS_AI_MODEL
+
+
+def test_workers_ai_rest_needs_token(monkeypatch):
+    monkeypatch.delenv("AI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv(
+        "AI_BASE_URL",
+        "https://api.cloudflare.com/client/v4/accounts/abc/ai/v1",
+    )
+    assert ai_configured() is False
+    result = chat(message="improve", yaml_content=SAMPLE)
+    assert result["ok"] is False
+    assert result["configured"] is False
+
+
+
 def test_apply_path_replacement():
     proposal = {
         "path": "cv",

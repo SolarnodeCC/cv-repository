@@ -31,7 +31,7 @@ Open [http://127.0.0.1:8765](http://127.0.0.1:8765):
 
 - **CV / Design / Locale / Settings** — form panels (+ YAML-toggle)
 - **Import** — RenderCV YAML of JSON Resume (bestand of plakken)
-- **AI** — voorstellen met accept/reject (vereist `AI_API_KEY` of `OPENAI_API_KEY`; optioneel `AI_BASE_URL`, `AI_MODEL`)
+- **AI** — voorstellen met accept/reject via **Cloudflare Workers AI** (hosted editor) of lokaal `AI_BASE_URL` + `AI_API_KEY` (Workers AI REST / andere OpenAI-compatible provider); optioneel `AI_MODEL`
 - **Valideren** / **Opslaan** (YAML) / **Render** (`output/` + R2 artifacts) / **Publish** / **Sync Git** (draft PR)
 - **Check** — sollicitatie-checklist op YAML-inhoud
 - **Download PDF** — één klik om in te dienen

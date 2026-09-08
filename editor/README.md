@@ -29,7 +29,7 @@ Re-check this list after every deploy that adds a hostname.
 | `/api/*` | Validate, save (YAML), render (+ R2), sync-git, hydrate, health, preview, import, AI, schema-meta |
 | R2 bridge | Allowlisted keys (`shared/r2-allowlist.json`) via `cv.r2` (+ etag If-Match) |
 | GitHub bridge | `github.api` → `api.github.com` (repo-scoped; token on Worker only) |
-| AI bridge | `ai.api` → OpenAI-compatible upstream (`AI_API_KEY` on Worker; optional `AI_UPSTREAM_BASE`) |
+| AI bridge | `ai.api` → **Cloudflare Workers AI** (`env.AI` binding). Optional override: `AI_UPSTREAM_BASE` + `AI_API_KEY` |
 
 ## R2
 
@@ -38,6 +38,23 @@ Bucket binding: `CV_DATA` → `solarnode-cv-data`.
 The container talks to R2 via Worker proxy host `cv.r2` (`outboundByHost`). Internet egress is disabled except for `cv.r2`, `github.api`, `ai.api`, and font/CDN hosts.
 
 **Ownership:** the editor is the live writer. CI `seed-r2` only fills **missing** keys unless `R2_SEED_FORCE=1` / `--force` (bootstrap or promote from Git).
+
+## AI (Workers AI)
+
+The editor AI panel defaults to **Cloudflare Workers AI** via the Worker `AI` binding (no OpenAI key).
+
+- Default model: `@cf/meta/llama-3.1-8b-instruct` (override with Worker var/secret `AI_MODEL`)
+- Container calls `http://ai.api/v1/chat/completions`; the Worker runs `env.AI.run(...)` and returns an OpenAI-shaped response
+- Optional escape hatch: set Worker `AI_UPSTREAM_BASE` + secret `AI_API_KEY` for an external OpenAI-compatible API
+
+Local (`make web`) against Workers AI REST:
+
+```bash
+export AI_BASE_URL="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/ai/v1"
+export AI_API_KEY="$CLOUDFLARE_API_TOKEN"   # token with Workers AI Edit
+export AI_MODEL="@cf/meta/llama-3.1-8b-instruct"
+make web
+```
 
 ## Git sync (fase 2)
 
@@ -50,7 +67,6 @@ UI button **Sync Git** → `POST /api/sync-git` creates branch `editor/cv-sync-*
 | `CLOUDFLARE_API_TOKEN` | Deploy Worker/Container + Access API |
 | `CLOUDFLARE_ACCOUNT_ID` | Account id |
 | `CV_EDITOR_GITHUB_TOKEN` | PAT with `contents:write` + `pull_requests:write` → written to Worker as `GITHUB_TOKEN` on each deploy |
-| `CV_EDITOR_AI_API_KEY` | Optional OpenAI-compatible key → Worker secret `AI_API_KEY` (AI panel) |
 | `ACCESS_ALLOWED_EMAILS` | Optional comma-separated allowlist (default `info@solarnode.cc`) |
 | `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET` | Optional Access service token for authenticated smoke tests |
 

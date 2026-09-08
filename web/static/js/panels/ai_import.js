@@ -119,12 +119,19 @@ export function renderAiPanel(root, ctx) {
       el("p", {
         className: "muted",
         text:
-          "AI is niet geconfigureerd. Zet AI_API_KEY (of OPENAI_API_KEY) en optioneel AI_BASE_URL / AI_MODEL op de server.",
+          "AI is niet geconfigureerd. Op Cloudflare gebruikt de hosted editor Workers AI (binding). Lokaal: zet AI_BASE_URL=https://api.cloudflare.com/client/v4/accounts/<ACCOUNT_ID>/ai/v1 en AI_API_KEY=<Cloudflare API token>, of een andere OpenAI-compatible provider.",
       })
     );
     root.appendChild(sec);
     return;
   }
+
+  sec.appendChild(
+    el("p", {
+      className: "muted small",
+      text: "Provider: Cloudflare Workers AI (of geconfigureerde OpenAI-compatible endpoint). Voorstellen kun je accepteren of negeren.",
+    })
+  );
 
   const prompt = el("textarea", {
     rows: "4",

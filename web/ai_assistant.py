@@ -10,10 +10,14 @@ import urllib.request
 from typing import Any
 
 
+DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
+DEFAULT_WORKERS_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct"
+
+
 def ai_configured() -> bool:
     if os.environ.get("AI_API_KEY") or os.environ.get("OPENAI_API_KEY"):
         return True
-    # Cloudflare container: Worker injects the key on the ai.api proxy.
+    # Cloudflare container: Worker proxies to Workers AI via ai.api (no key in container).
     return _base_url().startswith("http://ai.api")
 
 
@@ -29,8 +33,23 @@ def _base_url() -> str:
     ).rstrip("/")
 
 
+def _uses_workers_ai_rest() -> bool:
+    """True when AI_BASE_URL points at Cloudflare Workers AI OpenAI-compatible REST."""
+    base = _base_url()
+    return "api.cloudflare.com" in base and "/ai/v1" in base
+
+
+def _uses_cloudflare_ai() -> bool:
+    return _base_url().startswith("http://ai.api") or _uses_workers_ai_rest()
+
+
 def _model() -> str:
-    return os.environ.get("AI_MODEL") or os.environ.get("OPENAI_MODEL") or "gpt-4o-mini"
+    explicit = os.environ.get("AI_MODEL") or os.environ.get("OPENAI_MODEL")
+    if explicit:
+        return explicit
+    if _uses_cloudflare_ai():
+        return DEFAULT_WORKERS_AI_MODEL
+    return DEFAULT_OPENAI_MODEL
 
 
 SYSTEM_PROMPT = """You are a CV editing assistant for RenderCV YAML (v2.8).
@@ -83,14 +102,25 @@ def chat(
 ) -> dict[str, Any]:
     key = _api_key()
     via_proxy = _base_url().startswith("http://ai.api")
+    via_cf_rest = _uses_workers_ai_rest()
     if not key and not via_proxy:
         return {
             "ok": False,
             "configured": False,
             "message": (
-                "AI niet geconfigureerd. Zet AI_API_KEY (of OPENAI_API_KEY) en optioneel "
-                "AI_BASE_URL / AI_MODEL in de omgeving."
+                "AI niet geconfigureerd. Op Cloudflare gebruikt de editor Workers AI via de "
+                "Worker-binding. Lokaal: zet AI_BASE_URL naar "
+                "https://api.cloudflare.com/client/v4/accounts/<ACCOUNT_ID>/ai/v1 "
+                "en AI_API_KEY naar een Cloudflare API token (Workers AI Edit), "
+                "of gebruik een andere OpenAI-compatible provider."
             ),
+            "proposals": [],
+        }
+    if via_cf_rest and not key:
+        return {
+            "ok": False,
+            "configured": False,
+            "message": "Workers AI REST vereist AI_API_KEY (Cloudflare API token).",
             "proposals": [],
         }
 
@@ -109,12 +139,14 @@ def chat(
             messages.append({"role": role, "content": content[:8000]})
     messages.append({"role": "user", "content": "\n\n".join(user_parts)})
 
-    payload = {
+    payload: dict[str, Any] = {
         "model": _model(),
         "messages": messages,
         "temperature": 0.4,
-        "response_format": {"type": "json_object"},
     }
+    # Workers AI models often reject OpenAI response_format; prompt already requires JSON.
+    if not _uses_cloudflare_ai():
+        payload["response_format"] = {"type": "json_object"}
 
     headers = {
         "Content-Type": "application/json",

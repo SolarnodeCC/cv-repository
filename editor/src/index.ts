@@ -22,6 +22,7 @@ export class CvEditorContainer extends Container {
   allowedHosts = [
     "cv.r2",
     "github.api",
+    "ai.api",
     "cdn.jsdelivr.net",
     "fonts.googleapis.com",
     "fonts.gstatic.com",
@@ -32,6 +33,7 @@ export class CvEditorContainer extends Container {
     GITHUB_API_BASE: "http://github.api",
     GITHUB_REPO: GITHUB_REPO_DEFAULT,
     GITHUB_BASE_BRANCH: "main",
+    AI_BASE_URL: "http://ai.api/v1",
   };
 
   static outboundByHost = {
@@ -106,6 +108,34 @@ export class CvEditorContainer extends Container {
         body: request.body,
       });
     },
+
+    "ai.api": async (request: Request, env: Env) => {
+      const token = env.AI_API_KEY;
+      if (!token) {
+        return Response.json(
+          { message: "AI_API_KEY secret not configured on Worker" },
+          { status: 503 },
+        );
+      }
+      const url = new URL(request.url);
+      if (!url.pathname.startsWith("/v1/")) {
+        return new Response("Forbidden AI path", { status: 403 });
+      }
+      const upstream = (env.AI_UPSTREAM_BASE || "https://api.openai.com").replace(
+        /\/$/,
+        "",
+      );
+      const target = `${upstream}${url.pathname}${url.search}`;
+      const headers = new Headers(request.headers);
+      headers.set("Authorization", `Bearer ${token}`);
+      headers.set("User-Agent", "solarnode-cv-editor");
+      headers.delete("host");
+      return fetch(target, {
+        method: request.method,
+        headers,
+        body: request.body,
+      });
+    },
   };
 }
 
@@ -123,6 +153,7 @@ export default {
         r2: "solarnode-cv-data",
         allowed_r2_keys: [...ALLOWED_R2_KEYS],
         git_sync: Boolean(env.GITHUB_TOKEN),
+        ai: Boolean(env.AI_API_KEY),
         sleep_after: "45m",
       });
     }

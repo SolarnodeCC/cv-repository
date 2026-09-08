@@ -30,6 +30,7 @@
       <button type="button" id="btn-check" class="btn ghost" title="Sollicitatie-checklist op YAML-inhoud">Check</button>
       <button type="button" id="btn-save" class="btn secondary" title="Slaat YAML op (publieke PDF pas na Render)">Opslaan</button>
       <button type="button" id="btn-render" class="btn primary" title="Bouw PDF/PNG/HTML en publiceer naar R2">Render</button>
+      <button type="button" id="btn-publish" class="btn ghost" title="Publiceer huidige output/ naar R2">Publish</button>
       <button type="button" id="btn-sync-git" class="btn ghost" title="Open draft PR met cv.yaml naar GitHub">Sync Git</button>
       <a id="btn-download" class="btn download" href="/api/download/pdf" download="CV.pdf" title="Download PDF om in te dienen">Download PDF</a>
     </div>
@@ -37,7 +38,24 @@
 
   <div id="wake-banner" class="wake-banner" hidden role="status">Editor wordt gewekt… even geduld na idle.</div>
 
-  <p class="lede">Bewerk <code>cv.yaml</code> → <strong>Render</strong> (R2 live) → <strong>Sync Git</strong> (draft PR) → merge. <strong>Opslaan</strong> bewaart alleen YAML. Promote R2 vanuit Git: <code>R2_SEED_FORCE=1</code>. Sneltoetsen: <kbd>Ctrl</kbd>+<kbd>S</kbd> · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd> sync.</p>
+  <p class="lede">Panels voor <strong>CV / Design / Locale / Settings / AI / Import</strong> — Form of YAML. <strong>Render</strong> schrijft live artifacts; <strong>Sync Git</strong> opent een draft PR. Sneltoetsen: <kbd>Ctrl</kbd>+<kbd>S</kbd> · <kbd>Ctrl</kbd>+<kbd>Enter</kbd>.</p>
+
+  <nav class="panel-nav" aria-label="Editor panels">
+    <div class="panel-tabs" role="tablist">
+      <button type="button" class="panel-tab active" data-panel="cv" role="tab">CV</button>
+      <button type="button" class="panel-tab" data-panel="design" role="tab">Design</button>
+      <button type="button" class="panel-tab" data-panel="locale" role="tab">Locale</button>
+      <button type="button" class="panel-tab" data-panel="settings" role="tab">Settings</button>
+      <button type="button" class="panel-tab" data-panel="ai" role="tab">AI</button>
+      <button type="button" class="panel-tab" data-panel="import" role="tab">Import</button>
+    </div>
+    <div class="mode-toggle" role="group" aria-label="Edit mode">
+      <button type="button" class="mode-btn active" data-edit-mode="form">Form</button>
+      <button type="button" class="mode-btn" data-edit-mode="yaml">YAML</button>
+      <span id="edit-mode-label" class="mode-label">Form</span>
+      <span id="dirty-badge" class="badge" hidden>niet opgeslagen</span>
+    </div>
+  </nav>
 
   <div class="layout">
     <aside id="checklist-panel" class="checklist" aria-label="Sollicitatie-check" hidden>
@@ -55,10 +73,16 @@
     </aside>
 
     <main class="workspace">
-      <section class="pane editor-pane" aria-label="YAML editor">
+      <section id="form-pane" class="pane editor-pane" aria-label="Form editor">
+        <div class="pane-head">
+          <h1>Editor</h1>
+        </div>
+        <div id="form-root" class="form-root"></div>
+      </section>
+
+      <section id="yaml-pane" class="pane editor-pane" aria-label="YAML editor" hidden>
         <div class="pane-head">
           <h1>YAML</h1>
-          <span id="dirty-badge" class="badge" hidden>niet opgeslagen</span>
         </div>
         <textarea id="yaml-source" aria-label="cv.yaml inhoud"></textarea>
       </section>
@@ -91,12 +115,13 @@
   </footer>
   <pre id="log-panel" class="log-panel" hidden></pre>
 
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/lib/codemirror.min.js"
     integrity="sha384-t/C99Ss9npjVCqOGZhNjaRnafXAhKyPyhSP+cSSP0CWoFTfMXG4+impqZ6WfgO0a"
     crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/mode/yaml/yaml.min.js"
     integrity="sha384-131Ong53rCgUDHHluJOESiyk8FRC3j7cL7INdfB2n4SVkOoI87gNHb0B23LKlrMp"
     crossorigin="anonymous"></script>
-  <script src="/static/app.js"></script>
+  <script type="module" src="/static/js/main.js"></script>
 </body>
 </html>

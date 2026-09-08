@@ -5,8 +5,9 @@ Hosted YAML editor + RenderCV preview. Separate from the **public** Worker `sola
 ## Architecture
 
 - **Worker** `solarnode-cv-editor` proxies all requests to a singleton Container
-- **Container** runs the existing FastAPI app (`web/`) with RenderCV + Typst
-- **Public CV site** stays open at `solarnode-cv` / custom domain
+- **Container** runs the FastAPI app (`web/`) with RenderCV + Typst
+- **R2** `solarnode-cv-data` via virtual host `cv.r2` (`outboundByHost`) — hydrate on boot, publish on save/render
+- **Public CV site** reads `CV.pdf` / HTML / PNG from the same R2 bucket
 - **Access**: protect this editor Worker in the Cloudflare dashboard (email allowlist)
 
 ## Deploy
@@ -28,6 +29,11 @@ GitHub Action: `.github/workflows/deploy-editor.yml` (manual + path filters).
 3. Allow only your email / `@solarnode.cc` (or account members)
 4. Leave `solarnode-cv` **public** (do not protect the public CV Worker)
 
-## Persistence note
+## Persistence (Phase 3)
 
-Container disk is ephemeral. The image bakes in `cv.yaml` / `solarnode/` / `output/` from the repo at build time. GitHub remains the source of truth for now; R2 bucket `solarnode-cv-data` is provisioned for a later sync layer.
+| Key | Meaning |
+| --- | --- |
+| `cv.yaml` | Editor source |
+| `output/CV.pdf` / `.html` / `.png` / `.md` | Public site artifacts |
+
+Save/Render in the editor writes local disk **and** R2. The public Worker serves R2 first, then falls back to bundled static assets.

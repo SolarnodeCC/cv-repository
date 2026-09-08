@@ -1,0 +1,10 @@
+.git
+**/node_modules
+**/.wrangler
+**/__pycache__
+**/.venv
+site
+editor/node_modules
+.github
+*.md
+.cursor

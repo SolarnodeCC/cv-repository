@@ -144,14 +144,180 @@ body {
   color: rgba(243, 239, 230, 0.85);
 }
 
+.btn.download {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  background: rgba(47, 143, 107, 0.2);
+  border-color: rgba(47, 143, 107, 0.55);
+  color: #9fd9c0;
+}
+
+.btn.download:hover {
+  background: rgba(47, 143, 107, 0.35);
+  transform: translateY(-1px);
+}
+
+.lede kbd {
+  font-family: var(--font-mono);
+  font-size: 0.78em;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 0.25rem;
+  background: rgba(0, 0, 0, 0.25);
+  color: rgba(243, 239, 230, 0.9);
+}
+
+.layout {
+  flex: 1 1 auto;
+  display: flex;
+  gap: 0.75rem;
+  padding: 0 1.25rem 0.75rem;
+  min-height: 0;
+  max-height: 100%;
+}
+
+.checklist {
+  flex: 0 0 17.5rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--line);
+  background: rgba(7, 24, 36, 0.72);
+  backdrop-filter: blur(8px);
+  padding: 0.75rem 0.85rem 1rem;
+  animation: pane-in 0.45s ease-out both;
+}
+
+.checklist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.checklist-head h2 {
+  margin: 0;
+  font-family: var(--font-brand);
+  font-size: 0.92rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.checklist-summary {
+  margin: 0 0 0.75rem;
+  color: rgba(243, 239, 230, 0.75);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.score-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.score-ring {
+  --score: 0;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-brand);
+  font-weight: 700;
+  font-size: 0.95rem;
+  background:
+    radial-gradient(circle at center, rgba(7, 24, 36, 0.95) 58%, transparent 59%),
+    conic-gradient(var(--amber) calc(var(--score) * 1%), rgba(243, 239, 230, 0.12) 0);
+  border: 1px solid var(--line);
+}
+
+.score-ring.ready {
+  background:
+    radial-gradient(circle at center, rgba(7, 24, 36, 0.95) 58%, transparent 59%),
+    conic-gradient(var(--ok) calc(var(--score) * 1%), rgba(243, 239, 230, 0.12) 0);
+}
+
+.score-ring.blocked {
+  background:
+    radial-gradient(circle at center, rgba(7, 24, 36, 0.95) 58%, transparent 59%),
+    conic-gradient(var(--err) calc(var(--score) * 1%), rgba(243, 239, 230, 0.12) 0);
+}
+
+.score-label {
+  margin: 0;
+  font-size: 0.88rem;
+  color: rgba(243, 239, 230, 0.85);
+}
+
+.checklist-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.check-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.55rem;
+  padding: 0.45rem 0.35rem;
+  border-bottom: 1px solid rgba(243, 239, 230, 0.06);
+}
+
+.check-item strong {
+  display: block;
+  font-size: 0.84rem;
+}
+
+.check-item p {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.check-mark {
+  width: 0.65rem;
+  height: 0.65rem;
+  margin-top: 0.3rem;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.check-item.ok .check-mark {
+  background: var(--ok);
+}
+
+.check-item.warn .check-mark {
+  background: var(--amber-soft);
+}
+
+.check-item.error .check-mark {
+  background: var(--err);
+}
+
+.checklist-footnote {
+  margin: 0.85rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
 .workspace {
   flex: 1 1 auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
-  padding: 0 1.25rem 0.75rem;
   min-height: 0;
   max-height: 100%;
+  min-width: 0;
 }
 
 .pane {
@@ -371,6 +537,18 @@ body {
   }
 }
 
+@media (max-width: 1180px) {
+  .layout {
+    flex-direction: column;
+    overflow: auto;
+  }
+
+  .checklist {
+    flex: 0 0 auto;
+    max-height: 16rem;
+  }
+}
+
 @media (max-width: 960px) {
   .workspace {
     grid-template-columns: 1fr;
@@ -383,6 +561,10 @@ body {
     overflow: auto;
     height: auto;
     min-height: 100vh;
+  }
+
+  .layout {
+    max-height: none;
   }
 
   .pane {

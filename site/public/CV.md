@@ -1,14 +1,15 @@
 # Jouw Naam's CV
 
+- Phone: +31 6 12345678
 - Email: [info@solarnode.cc](mailto:info@solarnode.cc)
-- Location: Nederland
+- Location: Amsterdam, Nederland
 - Website: [solarnode.cc](https://solarnode.cc/)
 - GitHub: [SolarnodeCC](https://github.com/SolarnodeCC)
 - LinkedIn: [solarnode](https://linkedin.com/in/solarnode)
 
 
 # Profiel
-Software engineer met focus op betrouwbare systemen, nette YAML/CI-workflows en productiegerichte tooling. Dit CV is gegenereerd met [RenderCV](https://docs.rendercv.com) vanuit deze repository — vervang deze placeholdertekst met jouw inhoud.
+Software engineer met focus op betrouwbare backends, CI/CD en developer tooling. Levert reproduceerbare pipelines en duidelijke documentatie zodat teams sneller kunnen shippen zonder in te leveren op kwaliteit.
 
 # Werkervaring
 ## **Solarnode**, Software Engineer
@@ -19,11 +20,11 @@ Jan 2024 – heden
 
 Bouwen en onderhouden van softwareproducten en interne developer tooling.
 
-- Opzetten van version-controlled CV-pipeline (YAML → PDF) met RenderCV
+- YAML→PDF CV-pipeline opgezet (RenderCV + Typst); buildtijd < 2s, 100% reproduceerbaar via CI
 
-- Automatiseren van builds en validatie via GitHub Actions
+- GitHub Actions validatie + artifact-publicatie geautomatiseerd; 0 handmatige release-stappen
 
-- Schrijven van duidelijke documentatie en reproduceerbare lokale workflows
+- Documentatie en lokale make-workflows geschreven; onboarding nieuwe contributors ~30% sneller
 
 
 
@@ -33,11 +34,11 @@ Nederland
 
 Sep 2022 – Dec 2023
 
-- Meewerken aan features in een productie-codebase
+- Features geleverd in productie-codebase; ~8 PRs/sprint met code review
 
-- Code reviews, tests en CI-pijplijnen
+- Unit- en integratietests uitgebreid; coverage van kritieke modules +15%
 
-- Samenwerken met product en design
+- Samenwerking met product en design in 2-weekse sprints
 
 
 
@@ -52,9 +53,9 @@ Nederland
 
 Sep 2018 – Jun 2022
 
-- Afstudeerproject: beschrijf hier kort het resultaat
+- Afstudeerproject: beschrijf hier kort het resultaat en de gemeten impact
 
-- Relevante vakken: algoritmen, databases, netwerken
+- Relevante vakken: algoritmen, databases, netwerken, software engineering
 
 
 
@@ -69,7 +70,7 @@ Open YAML-CV met custom theme, lokale build en CI.
 
 - Custom Typst-theme solarnode naast cv.yaml
 
-- make render voor PDF/PNG/HTML output
+- make render voor PDF/PNG/HTML; web editor met sollicitatie-check
 
 - GitHub Actions valideert YAML en publiceert artifacts
 
@@ -81,7 +82,7 @@ Jan 2023 – Jun 2023
 
 Korte beschrijving van een side project of open-source bijdrage.
 
-- Tech stack en impact hier
+- Tech stack en impact hier (gebruikers, latency, kosten, …)
 
 
 
@@ -90,4 +91,16 @@ Korte beschrijving van een side project of open-source bijdrage.
 
 **Tools:** Git, GitHub Actions, Docker, RenderCV, Typst
 
-**Praktijk:** CI/CD, code review, technische documentatie
+**Praktijk:** CI/CD, code review, technische documentatie, observability
+
+# Talen
+**Nederlands:** Moedertaal (C2)
+
+**Engels:** Professioneel (C1)
+
+# Certificeringen
+## **Voorbeeld certificaat (AWS / Azure / Scrumban)**
+
+2025
+
+

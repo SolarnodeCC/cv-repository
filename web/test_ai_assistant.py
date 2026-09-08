@@ -98,3 +98,72 @@ def test_apply_invalid_path():
 
     with pytest.raises(ValueError, match="Ongeldig path"):
         apply_proposal(SAMPLE, {"path": "nope", "replacement": {}})
+
+
+def test_extract_json_from_prose_fence():
+    from web.ai_assistant import _extract_json
+
+    raw = """Sure, here you go:
+```json
+{"message": "Improved profile", "proposals": []}
+```
+"""
+    assert _extract_json(raw)["message"] == "Improved profile"
+
+
+def test_extract_json_question_only():
+    from web.ai_assistant import _extract_json
+
+    raw = '{"message": "Your CV looks strong on Capgemini leadership.", "proposals": []}'
+    parsed = _extract_json(raw)
+    assert parsed["proposals"] == []
+    assert "Capgemini" in parsed["message"]
+
+
+def test_chat_parse_retry_then_ok(monkeypatch):
+    from web import ai_assistant
+
+    monkeypatch.setenv("AI_BASE_URL", "http://ai.api/v1")
+    monkeypatch.delenv("AI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    calls = {"n": 0}
+
+    def fake_request(messages):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return {
+                "choices": [
+                    {"message": {"content": "I would improve the profile wording."}}
+                ]
+            }
+        return {
+            "choices": [
+                {
+                    "message": {
+                        "content": '{"message": "Profiel aangescherpt", "proposals": []}'
+                    }
+                }
+            ]
+        }
+
+    monkeypatch.setattr(ai_assistant, "_provider_request", fake_request)
+    result = chat(message="verbeter profiel", yaml_content=SAMPLE)
+    assert result["ok"] is True
+    assert result["message"] == "Profiel aangescherpt"
+    assert calls["n"] == 2
+
+
+def test_chat_parse_failure_returns_raw(monkeypatch):
+    from web import ai_assistant
+
+    monkeypatch.setenv("AI_BASE_URL", "http://ai.api/v1")
+
+    def always_prose(_messages):
+        return {"choices": [{"message": {"content": "Not JSON at all, sorry."}}]}
+
+    monkeypatch.setattr(ai_assistant, "_provider_request", always_prose)
+    result = chat(message="hallo", yaml_content=SAMPLE)
+    assert result["ok"] is False
+    assert "geen geldig JSON" in result["message"]
+    assert "Not JSON" in result["raw_content"]

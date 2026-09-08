@@ -242,9 +242,14 @@ async def hydrate_cv() -> StatusResponse:
     result = await hydrate_from_r2(cv_path=CV_PATH, output_dir=OUTPUT_DIR)
     _hydrated = True
     parts = []
-    if result["cv"]:
+    if result.get("cv_kept_local"):
+        if result.get("cv_promoted_to_r2"):
+            parts.append("lokale cv.yaml behouden + naar R2 gepromoot")
+        else:
+            parts.append("lokale cv.yaml behouden (R2 was verouderd)")
+    elif result.get("cv"):
         parts.append("cv.yaml")
-    parts.extend(result["artifacts"])
+    parts.extend(result.get("artifacts") or [])
     if not parts:
         return StatusResponse(ok=True, message="Geen R2-data gevonden (lokale bestanden ongewijzigd)")
     return StatusResponse(ok=True, message=f"Hernieuwbaar uit R2: {', '.join(parts)}")

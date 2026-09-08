@@ -174,6 +174,11 @@ export function renderAiPanel(root, ctx) {
               el("p", { text: result.message || "" }),
             ])
           );
+          if (!result.ok && result.raw_content) {
+            const raw = el("pre", { className: "ai-preview" });
+            raw.textContent = String(result.raw_content).slice(0, 1200);
+            thread.appendChild(raw);
+          }
           proposalsBox.innerHTML = "";
           for (const proposal of result.proposals || []) {
             const card = el("div", { className: "row-card" });

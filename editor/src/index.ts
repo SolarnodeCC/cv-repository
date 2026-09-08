@@ -56,7 +56,8 @@ async function workersAiChatCompletions(
   try {
     const result = await env.AI.run(model as keyof AiModels, {
       messages: body.messages || [],
-      temperature: body.temperature ?? 0.4,
+      temperature: body.temperature ?? 0.2,
+      max_tokens: 2048,
     } as Record<string, unknown>);
 
     // Some Workers AI models already return OpenAI-shaped payloads.

@@ -119,15 +119,34 @@ async def r2_put(key: str, data: bytes, content_type: str | None = None) -> bool
 
 
 async def hydrate_from_r2(*, cv_path: Path, output_dir: Path) -> dict:
-    """Pull cv.yaml + rendered artifacts from R2 into the local workspace."""
-    result: dict = {"cv": False, "artifacts": []}
+    """Pull cv.yaml + rendered artifacts from R2 into the local workspace.
+
+    If the image/repo already has a sollicitatie-ready ``cv.yaml`` while R2 still
+    holds placeholder/template content, keep the local file and promote it to R2
+    so the editor and public site converge on the Git version.
+    """
+    result: dict = {
+        "cv": False,
+        "artifacts": [],
+        "cv_kept_local": False,
+        "cv_promoted_to_r2": False,
+    }
     if not R2_ENABLED:
         return result
 
     cv_bytes = await r2_get("cv.yaml")
     if cv_bytes:
-        cv_path.write_bytes(cv_bytes)
-        result["cv"] = True
+        local_bytes = cv_path.read_bytes() if cv_path.is_file() else None
+        if local_bytes and _prefer_local_cv(local_bytes, cv_bytes):
+            logger.info(
+                "Keeping local cv.yaml over stale R2 template and promoting to R2"
+            )
+            result["cv_kept_local"] = True
+            if await r2_put("cv.yaml", local_bytes):
+                result["cv_promoted_to_r2"] = True
+        else:
+            cv_path.write_bytes(cv_bytes)
+            result["cv"] = True
 
     output_dir.mkdir(parents=True, exist_ok=True)
     for key in (
@@ -149,6 +168,53 @@ async def hydrate_from_r2(*, cv_path: Path, output_dir: Path) -> dict:
         result["artifacts"].append(key)
 
     return result
+
+
+def _cv_name(text: str) -> str:
+    try:
+        import yaml
+
+        doc = yaml.safe_load(text)
+        if isinstance(doc, dict):
+            cv = doc.get("cv")
+            if isinstance(cv, dict):
+                return str(cv.get("name") or "").strip().lower()
+    except Exception:  # noqa: BLE001
+        return ""
+    return ""
+
+
+def _prefer_local_cv(local: bytes, remote: bytes) -> bool:
+    """True when local Git/image CV should win over an older R2 object."""
+    if local == remote:
+        return False
+    try:
+        local_text = local.decode("utf-8")
+        remote_text = remote.decode("utf-8")
+    except UnicodeDecodeError:
+        return False
+
+    from web.checklist import PLACEHOLDER_HINTS, PLACEHOLDER_NAMES, evaluate_application_readiness
+
+    remote_name = _cv_name(remote_text)
+    local_name = _cv_name(local_text)
+    if remote_name in PLACEHOLDER_NAMES and local_name and local_name not in PLACEHOLDER_NAMES:
+        return True
+
+    remote_blob = remote_text.lower()
+    local_blob = local_text.lower()
+    remote_placeholders = any(h in remote_blob for h in PLACEHOLDER_HINTS)
+    local_placeholders = any(h in local_blob for h in PLACEHOLDER_HINTS)
+    if remote_placeholders and not local_placeholders:
+        return True
+
+    local_ready = evaluate_application_readiness(local_text)
+    remote_ready = evaluate_application_readiness(remote_text)
+    if local_ready.get("ready") and not remote_ready.get("ready"):
+        return True
+    if int(local_ready.get("score") or 0) - int(remote_ready.get("score") or 0) >= 20:
+        return True
+    return False
 
 
 async def publish_workspace(

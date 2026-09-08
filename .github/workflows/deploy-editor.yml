@@ -8,6 +8,7 @@ on:
       - "web/**"
       - "shared/**"
       - "solarnode/**"
+      - "cv.yaml"
       - "requirements.txt"
       - ".github/workflows/deploy-editor.yml"
   workflow_dispatch:

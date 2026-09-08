@@ -1,0 +1,3 @@
+# Pin RenderCV for reproducible local + CI builds.
+# Bump deliberately; update the schema URL in cv.yaml to match.
+rendercv[full]==2.8

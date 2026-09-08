@@ -1,0 +1,64 @@
+name: Validate CV
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate cv.yaml
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install RenderCV (pinned)
+        run: python -m pip install -r requirements.txt
+
+      - name: Dry-run render
+        id: dry_run
+        run: |
+          set +e
+          rendercv render cv.yaml \
+            --dont-generate-html \
+            --dont-generate-markdown \
+            --dont-generate-png \
+            --output-folder /tmp/rendercv-validate \
+            > lint_output.txt 2>&1
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Write failure summary
+        if: steps.dry_run.outputs.exit_code != '0'
+        run: |
+          {
+            echo "## Validation failed"
+            echo ""
+            echo "RenderCV rejected \`cv.yaml\` (or the \`solarnode\` theme). Fix before merging."
+            echo ""
+            echo "### Error output"
+            echo '```text'
+            cat lint_output.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Write success summary
+        if: steps.dry_run.outputs.exit_code == '0'
+        run: |
+          {
+            echo "## Validation passed"
+            echo ""
+            echo "\`cv.yaml\` + theme \`solarnode\` render successfully."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Exit with render status
+        run: exit "${{ steps.dry_run.outputs.exit_code }}"

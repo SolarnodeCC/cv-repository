@@ -1,0 +1,11 @@
+{
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/rendercv/rendercv/refs/tags/v2.8/schema.json": [
+      "cv.yaml",
+      "*_CV.yaml"
+    ]
+  },
+  "files.associations": {
+    "*.j2.typ": "typst"
+  }
+}

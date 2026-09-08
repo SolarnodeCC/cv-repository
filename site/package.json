@@ -3,10 +3,12 @@
   "private": true,
   "scripts": {
     "sync": "node ./scripts/sync-output.mjs",
-    "deploy": "npm run sync && wrangler deploy",
+    "seed-r2": "node ./scripts/seed-r2.mjs",
+    "deploy": "npm run sync && wrangler deploy && npm run seed-r2",
     "dev": "npm run sync && wrangler dev"
   },
   "devDependencies": {
+    "typescript": "^5.9.2",
     "wrangler": "^4.129.1"
   }
 }

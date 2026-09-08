@@ -65,7 +65,17 @@ De Worker **`solarnode-cv-editor`** draait de YAML-editor in een **Container** (
 2. Dashboard → Worker `solarnode-cv-editor` → **Access** → protect (alleen jouw e-mail / `@solarnode.cc`)
 3. Laat `solarnode-cv` publiek (geen Access op de publieke CV-site)
 
-Zie [`editor/README.md`](editor/README.md). R2-bucket `solarnode-cv-data` is aangemaakt voor latere persistentie; GitHub blijft voorlopig bron van waarheid.
+Zie [`editor/README.md`](editor/README.md).
+
+## Cloudflare (Fase 3 — R2 persistentie)
+
+Bucket **`solarnode-cv-data`**:
+
+- Editor hydrate’t `cv.yaml` + artifacts bij start; Save/Render publiceert naar R2
+- Publieke site serveert `/CV.pdf` (enz.) bij voorkeur uit R2 (anders bundled `site/public`)
+- Site-deploy seed’t R2 vanuit `output/` (`npm run seed-r2`)
+
+GitHub blijft de version-control bron; R2 is de live runtime/publicatie-laag.
 
 ## Structuur
 

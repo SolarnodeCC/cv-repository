@@ -6,6 +6,7 @@ import asyncio
 import os
 import shutil
 import tempfile
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import yaml
@@ -14,13 +15,22 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from web.r2_store import hydrate_from_r2, publish_workspace
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CV_PATH = REPO_ROOT / "cv.yaml"
 BUFFER_PATH = REPO_ROOT / ".cv.web-buffer.yaml"
 OUTPUT_DIR = REPO_ROOT / "output"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
-app = FastAPI(title="Solarnode CV Editor", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    await hydrate_from_r2(cv_path=CV_PATH, output_dir=OUTPUT_DIR)
+    yield
+
+
+app = FastAPI(title="Solarnode CV Editor", version="0.2.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
@@ -85,11 +95,14 @@ async def health() -> dict:
         "cv_exists": CV_PATH.is_file(),
         "output_exists": OUTPUT_DIR.is_dir(),
         "rendercv": rendercv if Path(rendercv).is_file() else None,
+        "r2_sync": os.environ.get("R2_SYNC", "0") not in {"0", "false", "False"},
     }
 
 
 @app.get("/api/cv")
 async def get_cv() -> dict:
+    # Prefer freshest R2 copy when running in the Cloudflare container.
+    await hydrate_from_r2(cv_path=CV_PATH, output_dir=OUTPUT_DIR)
     if not CV_PATH.is_file():
         raise HTTPException(status_code=404, detail="cv.yaml niet gevonden")
     return {
@@ -101,8 +114,11 @@ async def get_cv() -> dict:
 @app.put("/api/cv", response_model=StatusResponse)
 async def put_cv(payload: CvPayload) -> StatusResponse:
     _parse_yaml(payload.content)
-    CV_PATH.write_text(payload.content if payload.content.endswith("\n") else payload.content + "\n", encoding="utf-8")
-    return StatusResponse(ok=True, message="cv.yaml opgeslagen")
+    text = payload.content if payload.content.endswith("\n") else payload.content + "\n"
+    CV_PATH.write_text(text, encoding="utf-8")
+    published = await publish_workspace(cv_path=CV_PATH, output_dir=OUTPUT_DIR)
+    suffix = f" (R2: {', '.join(published)})" if published else ""
+    return StatusResponse(ok=True, message=f"cv.yaml opgeslagen{suffix}")
 
 
 def _write_buffer(content: str) -> Path:
@@ -141,7 +157,7 @@ async def validate_cv(payload: CvPayload | None = None) -> StatusResponse:
 
 @app.post("/api/render", response_model=StatusResponse)
 async def render_cv(payload: CvPayload | None = None) -> StatusResponse:
-    """Save optional buffer, then render into output/."""
+    """Save optional buffer, then render into output/ and publish to R2."""
     if payload is not None:
         _parse_yaml(payload.content)
         CV_PATH.write_text(
@@ -157,7 +173,21 @@ async def render_cv(payload: CvPayload | None = None) -> StatusResponse:
     if not pdf.is_file():
         return StatusResponse(ok=False, message="Render klaar maar CV.pdf ontbreekt", detail=log[-4000:])
 
-    return StatusResponse(ok=True, message="Render voltooid → output/CV.pdf", detail=log[-2000:] or None)
+    published = await publish_workspace(cv_path=CV_PATH, output_dir=OUTPUT_DIR)
+    pub = f" · R2 {len(published)} files" if published else ""
+    return StatusResponse(
+        ok=True,
+        message=f"Render voltooid → output/CV.pdf{pub}",
+        detail=log[-2000:] or None,
+    )
+
+
+@app.post("/api/publish", response_model=StatusResponse)
+async def publish_cv() -> StatusResponse:
+    published = await publish_workspace(cv_path=CV_PATH, output_dir=OUTPUT_DIR)
+    if not published:
+        return StatusResponse(ok=False, message="Niets gepubliceerd naar R2 (sync uit of leeg)")
+    return StatusResponse(ok=True, message=f"Gepubliceerd naar R2: {', '.join(published)}")
 
 
 @app.get("/api/preview/status")
@@ -180,8 +210,9 @@ async def preview_pdf() -> FileResponse:
 
 @app.get("/api/preview/png")
 async def preview_png() -> FileResponse:
-    # Prefer first page preview; fall back to CV.png if present.
-    candidates = sorted(OUTPUT_DIR.glob("CV_*.png")) + ([OUTPUT_DIR / "CV.png"] if (OUTPUT_DIR / "CV.png").is_file() else [])
+    candidates = sorted(OUTPUT_DIR.glob("CV_*.png")) + (
+        [OUTPUT_DIR / "CV.png"] if (OUTPUT_DIR / "CV.png").is_file() else []
+    )
     for path in candidates:
         if path.is_file():
             return FileResponse(path, media_type="image/png", filename=path.name)

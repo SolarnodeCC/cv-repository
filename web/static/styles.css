@@ -557,6 +557,12 @@ body {
   animation: pane-in 0.55s ease-out both;
 }
 
+.pane[hidden],
+#form-pane[hidden],
+#yaml-pane[hidden] {
+  display: none !important;
+}
+
 .preview-pane {
   animation-delay: 0.08s;
 }

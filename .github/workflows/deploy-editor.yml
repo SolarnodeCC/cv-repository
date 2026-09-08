@@ -9,7 +9,6 @@ on:
       - "solarnode/**"
       - "cv.yaml"
       - "requirements.txt"
-      - "output/**"
       - ".github/workflows/deploy-editor.yml"
   workflow_dispatch:
 

@@ -71,9 +71,10 @@ Zie [`editor/README.md`](editor/README.md).
 
 Bucket **`solarnode-cv-data`**:
 
-- Editor hydrate’t `cv.yaml` + artifacts bij start; Save/Render publiceert naar R2
+- Editor hydrate’t `cv.yaml` + artifacts bij start (en via **R2 sync** in de UI); Save/Render publiceert naar R2
 - Publieke site serveert `/CV.pdf` (enz.) bij voorkeur uit R2 (anders bundled `site/public`)
-- Site-deploy seed’t R2 vanuit `output/` (`npm run seed-r2`)
+- Na een geslaagde **Render CV**-run seed’t CI R2 vanuit `output/`
+- Site-deploy seed’t R2 ook (`npm run seed-r2`)
 
 GitHub blijft de version-control bron; R2 is de live runtime/publicatie-laag.
 

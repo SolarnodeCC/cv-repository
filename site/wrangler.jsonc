@@ -9,7 +9,8 @@
     "binding": "ASSETS",
     "not_found_handling": "404-page",
     "run_worker_first": true
-  },  "routes": [
+  },
+  "routes": [
     {
       "pattern": "cv.solarnode.cc",
       "custom_domain": true
@@ -22,6 +23,7 @@
     }
   ],
   "observability": {
-    "enabled": true
+    "enabled": true,
+    "head_sampling_rate": 1
   }
 }

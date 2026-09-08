@@ -3,6 +3,6 @@
 rendercv[full]==2.8
 
 # Local CV web editor (make web)
-fastapi>=0.115
-uvicorn[standard]>=0.32
-pyyaml>=6
+fastapi>=0.115,<0.120
+uvicorn[standard]>=0.32,<0.40
+pyyaml>=6,<7

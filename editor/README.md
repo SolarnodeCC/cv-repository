@@ -1,39 +1,43 @@
-# Solarnode CV Editor (Cloudflare Containers)
+# Private RenderCV editor (Cloudflare Container)
 
-Hosted YAML editor + RenderCV preview. Separate from the **public** Worker `solarnode-cv`.
+Runs the FastAPI editor from [`web/`](../web/) inside a Cloudflare Container, fronted by Worker `solarnode-cv-editor`.
 
-## Architecture
+Intended for **private / team-only** use. Protect the Worker hostname with [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) in the dashboard (Zero Trust → Access → Applications).
 
-- **Worker** `solarnode-cv-editor` proxies all requests to a singleton Container
-- **Container** runs the FastAPI app (`web/`) with RenderCV + Typst
-- **R2** `solarnode-cv-data` via virtual host `cv.r2` (`outboundByHost`) — hydrate on boot, publish on save/render
-- **Public CV site** reads `CV.pdf` / HTML / PNG from the same R2 bucket
-- **Access**: protect this editor Worker in the Cloudflare dashboard (email allowlist)
+## Endpoints
+
+| Path | Purpose |
+|------|---------|
+| `/` | Editor UI |
+| `/api/*` | Validate, save, render, hydrate, health, preview |
+| R2 bridge | Allowlisted keys only (`cv.yaml`, `output/CV.*`) via `cv.r2` |
+
+## R2
+
+Bucket binding: `CV_DATA` → `solarnode-cv-data`.
+
+The container talks to R2 via Worker proxy host `cv.r2` (`outboundByHost`). Internet egress is disabled except for that host and font/CDN hosts needed by Typst/CodeMirror.
 
 ## Deploy
 
-Requires Docker on the machine/CI runner (image build) and an API token that can edit Workers **and** Containers.
+Requires GitHub secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 
 ```bash
+# via Actions (preferred)
+# push to main under editor/** or web/**
+
+# or locally
 cd editor
-npm install
-npm run deploy
+npm ci
+npx wrangler deploy
 ```
 
-GitHub Action: `.github/workflows/deploy-editor.yml` (manual + path filters).
+Container image build context is the **repository root** (`image_build_context = ".."`).
 
-## Secure with Cloudflare Access (required)
+## Local container build smoke test
 
-1. Cloudflare dashboard → **Workers & Pages** → `solarnode-cv-editor` → **Access**
-2. **Protect this Worker** (production + previews)
-3. Allow only your email / `@solarnode.cc` (or account members)
-4. Leave `solarnode-cv` **public** (do not protect the public CV Worker)
-
-## Persistence (Phase 3)
-
-| Key | Meaning |
-| --- | --- |
-| `cv.yaml` | Editor source |
-| `output/CV.pdf` / `.html` / `.png` / `.md` | Public site artifacts |
-
-Save/Render in the editor writes local disk **and** R2. The public Worker serves R2 first, then falls back to bundled static assets.
+```bash
+docker build -f editor/Dockerfile -t solarnode-cv-editor:local .
+docker run --rm -p 8080:8080 solarnode-cv-editor:local
+curl -fsS http://127.0.0.1:8080/api/health
+```

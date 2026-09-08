@@ -9,6 +9,10 @@
     "enabled": true,
     "head_sampling_rate": 1
   },
+  "vars": {
+    "GITHUB_REPO": "SolarnodeCC/cv-repository",
+    "GITHUB_BASE_BRANCH": "main"
+  },
   "containers": [
     {
       "class_name": "CvEditorContainer",

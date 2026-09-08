@@ -4,19 +4,24 @@ import allowlist from "../../shared/r2-allowlist.json";
 /** Only these R2 object keys may be read/written by the editor container. */
 const ALLOWED_R2_KEYS = new Set<string>(allowlist.keys);
 
+const GITHUB_REPO_DEFAULT = "SolarnodeCC/cv-repository";
+
 /**
  * Singleton CV editor container (RenderCV + FastAPI UI).
  * Intended for private use. Cloudflare Access on this Worker is required.
  *
- * R2 access uses virtual host `cv.r2` via outbound interception.
+ * R2 access uses virtual host `cv.r2`; GitHub API uses `github.api`
+ * (Authorization injected from Worker secret — token never enters the container).
  */
 export class CvEditorContainer extends Container {
   defaultPort = 8080;
-  sleepAfter = "15m";
-  // Deny-by-default egress; allow R2 bridge + editor CDN assets only.
+  // Longer idle keeps a working session warm (fewer cold starts).
+  sleepAfter = "45m";
+  // Deny-by-default egress; allow R2 bridge + GitHub proxy + editor CDN assets only.
   enableInternet = false;
   allowedHosts = [
     "cv.r2",
+    "github.api",
     "cdn.jsdelivr.net",
     "fonts.googleapis.com",
     "fonts.gstatic.com",
@@ -24,6 +29,9 @@ export class CvEditorContainer extends Container {
   envVars = {
     R2_SYNC: "1",
     R2_HTTP_BASE: "http://cv.r2",
+    GITHUB_API_BASE: "http://github.api",
+    GITHUB_REPO: GITHUB_REPO_DEFAULT,
+    GITHUB_BASE_BRANCH: "main",
   };
 
   static outboundByHost = {
@@ -46,15 +54,57 @@ export class CvEditorContainer extends Container {
       }
 
       if (request.method === "PUT") {
+        const ifMatch = request.headers.get("if-match");
+        if (ifMatch) {
+          const current = await env.CV_DATA.head(key);
+          if (current && current.httpEtag && current.httpEtag !== ifMatch) {
+            return new Response("Precondition Failed", { status: 412 });
+          }
+        }
         const contentType =
           request.headers.get("content-type") ?? "application/octet-stream";
-        await env.CV_DATA.put(key, request.body, {
+        const putResult = await env.CV_DATA.put(key, request.body, {
           httpMetadata: { contentType },
         });
-        return Response.json({ ok: true, key });
+        const headers = new Headers({ "content-type": "application/json" });
+        if (putResult?.httpEtag) {
+          headers.set("etag", putResult.httpEtag);
+        }
+        return new Response(JSON.stringify({ ok: true, key }), {
+          status: 200,
+          headers,
+        });
       }
 
       return new Response("Method not allowed", { status: 405 });
+    },
+
+    "github.api": async (request: Request, env: Env) => {
+      const token = env.GITHUB_TOKEN;
+      if (!token) {
+        return Response.json(
+          { message: "GITHUB_TOKEN secret not configured on Worker" },
+          { status: 503 },
+        );
+      }
+      const repo = env.GITHUB_REPO || GITHUB_REPO_DEFAULT;
+      const url = new URL(request.url);
+      const allowed = `/repos/${repo}`;
+      if (url.pathname !== allowed && !url.pathname.startsWith(`${allowed}/`)) {
+        return new Response("Forbidden GitHub path", { status: 403 });
+      }
+      const target = `https://api.github.com${url.pathname}${url.search}`;
+      const headers = new Headers(request.headers);
+      headers.set("Authorization", `Bearer ${token}`);
+      headers.set("Accept", "application/vnd.github+json");
+      headers.set("X-GitHub-Api-Version", "2022-11-28");
+      headers.set("User-Agent", "solarnode-cv-editor");
+      headers.delete("host");
+      return fetch(target, {
+        method: request.method,
+        headers,
+        body: request.body,
+      });
     },
   };
 }
@@ -72,6 +122,25 @@ export default {
         worker: "solarnode-cv-editor",
         r2: "solarnode-cv-data",
         allowed_r2_keys: [...ALLOWED_R2_KEYS],
+        git_sync: Boolean(env.GITHUB_TOKEN),
+        sleep_after: "45m",
+      });
+    }
+
+    // Warm path: light probe that still wakes the container for /api/health.
+    if (url.pathname === "/api/wake") {
+      const container = getContainer(env.CV_EDITOR, "default");
+      const started = Date.now();
+      const res = await container.fetch(
+        new Request(new URL("/api/health", request.url), { method: "GET" }),
+      );
+      const ms = Date.now() - started;
+      const body = await res.json().catch(() => ({}));
+      return Response.json({
+        ok: res.ok,
+        wake_ms: ms,
+        coldish: ms > 2500,
+        health: body,
       });
     }
 

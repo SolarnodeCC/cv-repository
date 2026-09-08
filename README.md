@@ -30,12 +30,14 @@ make web
 Open [http://127.0.0.1:8765](http://127.0.0.1:8765):
 
 - YAML-editor voor [`cv.yaml`](cv.yaml)
-- **Valideren** / **Opslaan** (YAML; publieke PDF pas na Render) / **Render** (schrijft `output/` + R2 artifacts)
-- **Check** — sollicitatie-checklist op YAML-inhoud (telefoon, LinkedIn, metrics, placeholders, …)
+- **Valideren** / **Opslaan** (YAML) / **Render** (`output/` + R2 artifacts) / **Sync Git** (draft PR)
+- **Check** — sollicitatie-checklist op YAML-inhoud
 - **Download PDF** — één klik om in te dienen
 - Preview van PNG (standaard), PDF of HTML
 
-Sneltoetsen: `Ctrl+S` opslaan · `Ctrl+Enter` render · `Ctrl+Shift+C` check.
+Sneltoetsen: `Ctrl+S` opslaan · `Ctrl+Enter` render · `Ctrl+Shift+C` check · `Ctrl+Shift+G` sync git.
+
+Happy path: bewerken → **Render** (R2 live) → **Sync Git** → merge → optioneel promote R2 (`R2_SEED_FORCE=1`).
 
 Dit is geen hosted SaaS zoals [rendercv.com](https://rendercv.com); de bron blijft deze repo + CI.
 
@@ -59,7 +61,7 @@ Vereiste credentials (lokaal of GitHub Actions secrets):
 | `CLOUDFLARE_API_TOKEN` | Token met o.a. *Workers Scripts:Edit* + *Account:Read* (+ *Containers* voor de editor) |
 | `CLOUDFLARE_ACCOUNT_ID` | Account-ID uit het Cloudflare-dashboard |
 
-Na merge naar `main` deployt [`.github/workflows/deploy-site.yml`](.github/workflows/deploy-site.yml) automatisch wanneer `output/` of `site/` wijzigt.
+Na merge naar `main` deployt [`.github/workflows/deploy-site.yml`](.github/workflows/deploy-site.yml) automatisch wanneer `cv.yaml`, theme of `site/` wijzigt (CI rendert artifacts; binaries worden niet gecommit).
 
 ## Cloudflare (Fase 2 — editor + Access)
 
@@ -76,11 +78,13 @@ Zie de volledige checklist in [`editor/README.md`](editor/README.md).
 
 Bucket **`solarnode-cv-data`**:
 
-- Editor is **live writer**: hydrate bij start / **R2 sync**; **Opslaan** = YAML; **Render** = artifacts → R2
-- Publieke site serveert `/CV.pdf` (enz.) bij voorkeur uit R2 (anders bundled `site/public`)
+- Editor is **live writer**: hydrate bij start / **R2 sync**; **Opslaan** = YAML; **Render** = artifacts → R2; **Sync Git** = draft PR met `cv.yaml`
+- Publieke site serveert `/CV.pdf` (enz.) bij voorkeur uit R2 (anders bundled `site/public` na CI-render)
 - CI `seed-r2` is **non-destructief** (vult alleen ontbrekende keys). Overschrijven: `R2_SEED_FORCE=1 npm run seed-r2` of `npm run seed-r2:force` (bootstrap / promote from Git)
 
 GitHub blijft de version-control bron; R2 is de live runtime/publicatie-laag. Allowlist: [`shared/r2-allowlist.json`](shared/r2-allowlist.json).
+
+Hosted editor Git sync: zet Worker-secret `GITHUB_TOKEN` (scopes: `contents:write`, `pull_requests:write`) — zie [`editor/README.md`](editor/README.md). Lokaal: exporteer `GITHUB_TOKEN` vóór `make web`.
 
 Roadmap (vervolgfasen): [`docs/architectuur-en-roadmap.md`](docs/architectuur-en-roadmap.md).
 
@@ -96,7 +100,7 @@ editor/                 ← Cloudflare Container editor (privé / Access)
 docs/                   ← architectuur & roadmap
 requirements.txt        ← gepinde RenderCV-versie (+ web deps)
 Makefile                ← install / render / validate / watch / web / site-* / editor-*
-output/                 ← gegenereerde artifacts (commit na render)
+output/                 ← gegenereerde artifacts (niet committen; zie output/README)
 .github/workflows/      ← validate, render, deploy-site, deploy-editor
 ```
 
@@ -104,7 +108,7 @@ output/                 ← gegenereerde artifacts (commit na render)
 
 1. Bewerk [`cv.yaml`](cv.yaml) in de web editor of in Cursor (JSON Schema-URL bovenaan → autocomplete).
 2. Theme/layout: bestanden in [`solarnode/`](solarnode/) (zie [`solarnode/README.md`](solarnode/README.md)).
-3. `make render` (of **Render** in de UI) en commit `output/` als je de PDF in de repo wilt bijwerken.
+3. `make render` (of **Render** in de UI). Commit `cv.yaml` / theme; binaries blijven buiten git (CI + R2 publiceren).
 
 Handige commands:
 

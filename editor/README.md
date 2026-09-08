@@ -2,7 +2,7 @@
 
 Runs the FastAPI editor from [`web/`](../web/) inside a Cloudflare Container, fronted by Worker `solarnode-cv-editor`.
 
-**Cloudflare Access is required** before exposing this Worker. Without Access, anyone who finds the hostname can save YAML, render (CPU), and publish to R2.
+**Cloudflare Access is required** before exposing this Worker. Without Access, anyone who finds the hostname can save YAML, render (CPU), publish to R2, and open GitHub PRs (if `GITHUB_TOKEN` is set).
 
 ## Access checklist (required)
 
@@ -25,28 +25,48 @@ Re-check this list after every deploy that adds a hostname.
 | Path | Purpose |
 |------|---------|
 | `/` | Editor UI |
-| `/api/*` | Validate, save (YAML only), render (+ artifacts → R2), hydrate, health, preview |
-| R2 bridge | Allowlisted keys only (`shared/r2-allowlist.json`) via `cv.r2` |
+| `/api/wake` | Worker probe that wakes the container (cold-start UX) |
+| `/api/*` | Validate, save (YAML), render (+ R2), sync-git, hydrate, health, preview |
+| R2 bridge | Allowlisted keys (`shared/r2-allowlist.json`) via `cv.r2` (+ etag If-Match) |
+| GitHub bridge | `github.api` → `api.github.com` (repo-scoped; token on Worker only) |
 
 ## R2
 
 Bucket binding: `CV_DATA` → `solarnode-cv-data`.
 
-The container talks to R2 via Worker proxy host `cv.r2` (`outboundByHost`). Internet egress is disabled except for that host and font/CDN hosts needed by Typst/CodeMirror.
+The container talks to R2 via Worker proxy host `cv.r2` (`outboundByHost`). Internet egress is disabled except for `cv.r2`, `github.api`, and font/CDN hosts.
 
 **Ownership:** the editor is the live writer. CI `seed-r2` only fills **missing** keys unless `R2_SEED_FORCE=1` / `--force` (bootstrap or promote from Git).
 
+## Git sync (fase 2)
+
+UI button **Sync Git** → `POST /api/sync-git` creates branch `editor/cv-sync-*` + **draft PR** with `cv.yaml`.
+
+1. Create a fine-grained or classic PAT with `contents:write` + `pull_requests:write` on this repo
+2. `cd editor && npx wrangler secret put GITHUB_TOKEN`
+3. Redeploy the editor Worker
+4. Confirm `/edge-health` shows `"git_sync": true`
+
+Locally: `export GITHUB_TOKEN=...` then `make web` (calls `https://api.github.com` directly).
+
+Happy path: edit → **Render** (R2) → **Sync Git** → review/merge → optional **Promote** (`R2_SEED_FORCE=1` on Render/Deploy workflow_dispatch).
+
+## Cold start (fase 3)
+
+Container `sleepAfter` is **45m**. The UI shows a wake banner when requests take >2s; `/api/wake` measures wake latency.
+
 ## Deploy
 
-Requires GitHub secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+Requires GitHub secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Optional: Worker secret `GITHUB_TOKEN` for Sync Git.
 
 ```bash
-# via Actions (preferred)
-# push to main under editor/** or web/**
+# via Actions (preferred) — triggers on editor/**, web/**, shared/**, solarnode/**
+# (not on cv.yaml content alone — live YAML comes from R2)
 
 # or locally
 cd editor
 npm ci
+npx wrangler secret put GITHUB_TOKEN   # once
 npx wrangler deploy
 ```
 

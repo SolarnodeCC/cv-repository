@@ -17,7 +17,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from web.checklist import evaluate_application_readiness
-from web.r2_store import hydrate_from_r2, publish_workspace
+from web.git_sync import git_sync_configured, sync_cv_yaml_to_github
+from web.r2_store import hydrate_from_r2, last_publish_error, publish_workspace
 
 logger = logging.getLogger("web.app")
 
@@ -47,7 +48,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="Solarnode CV Editor", version="0.4.0", lifespan=lifespan)
+app = FastAPI(title="Solarnode CV Editor", version="0.5.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
@@ -111,6 +112,12 @@ async def index() -> HTMLResponse:
     return HTMLResponse(index_path.read_text(encoding="utf-8"))
 
 
+class SyncGitPayload(BaseModel):
+    content: str | None = Field(None, description="Optional buffer; defaults to saved cv.yaml")
+    message: str | None = Field(None, max_length=200, description="Commit / PR title")
+    draft: bool = True
+
+
 @app.get("/api/health")
 async def health() -> dict:
     rendercv = shutil.which("rendercv") or str(Path.home() / ".local" / "bin" / "rendercv")
@@ -121,8 +128,17 @@ async def health() -> dict:
         "rendercv": rendercv if Path(rendercv).is_file() else None,
         "r2_sync": os.environ.get("R2_SYNC", "0") not in {"0", "false", "False"},
         "r2_hydrated": _hydrated,
+        "r2_last_publish_error": last_publish_error(),
+        "git_sync": git_sync_configured(),
         "render_busy": _render_lock.locked(),
     }
+
+
+@app.get("/api/wake")
+async def wake() -> dict:
+    """Local stand-in for Worker /api/wake (cold-start probe)."""
+    health_body = await health()
+    return {"ok": True, "wake_ms": 0, "coldish": False, "health": health_body}
 
 
 @app.get("/api/cv")
@@ -236,9 +252,46 @@ async def render_cv(payload: CvPayload | None = None) -> StatusResponse:
 @app.post("/api/publish", response_model=StatusResponse)
 async def publish_cv() -> StatusResponse:
     published = await publish_workspace(cv_path=CV_PATH, output_dir=OUTPUT_DIR)
+    err = last_publish_error()
     if not published:
-        return StatusResponse(ok=False, message="Niets gepubliceerd naar R2 (sync uit of leeg)")
-    return StatusResponse(ok=True, message=f"Gepubliceerd naar R2: {', '.join(published)}")
+        return StatusResponse(
+            ok=False,
+            message="Niets gepubliceerd naar R2 (sync uit, leeg, of fout)",
+            detail=err,
+        )
+    msg = f"Gepubliceerd naar R2: {', '.join(published)}"
+    if err:
+        return StatusResponse(ok=False, message=f"{msg} (deels mislukt)", detail=err)
+    return StatusResponse(ok=True, message=msg)
+
+
+@app.post("/api/sync-git")
+async def sync_git(payload: SyncGitPayload | None = None) -> dict:
+    """Push current cv.yaml to GitHub as a draft PR (version-control sync)."""
+    raw = None
+    if payload and payload.content is not None:
+        raw = payload.content
+    elif CV_PATH.is_file():
+        raw = CV_PATH.read_text(encoding="utf-8")
+    if not raw or not raw.strip():
+        raise HTTPException(status_code=400, detail="Geen cv.yaml om te syncen")
+    _parse_yaml(raw)
+    # Persist buffer before sync so disk matches PR content.
+    text = raw if raw.endswith("\n") else raw + "\n"
+    CV_PATH.write_text(text, encoding="utf-8")
+    await publish_workspace(cv_path=CV_PATH, output_dir=OUTPUT_DIR, artifacts=False)
+
+    result = await asyncio.to_thread(
+        sync_cv_yaml_to_github,
+        text,
+        commit_message=(payload.message if payload else None),
+        draft=True if payload is None else payload.draft,
+    )
+    if not result.get("ok"):
+        msg = result.get("message") or "Git sync mislukt"
+        code = 503 if "niet geconfigureerd" in msg else 502
+        raise HTTPException(status_code=code, detail=msg)
+    return result
 
 
 @app.post("/api/checklist")

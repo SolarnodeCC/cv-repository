@@ -76,7 +76,7 @@ Cloudflare-fasen 1–3 (publieke site → editor → R2) zijn live. Nummering hi
 
 ## Fase 0 — Analyse & roadmap
 
-**Status:** gedaan in deze PR.
+**Status:** gedaan (PR #8).
 
 - Dit document + link vanuit README.
 - Productbesluit: blijven *private RenderCV + Cloudflare publish*; geen SaaS/ATS-product tot fase 4 expliciet wordt gekozen.
@@ -85,7 +85,7 @@ Cloudflare-fasen 1–3 (publieke site → editor → R2) zijn live. Nummering hi
 
 ## Fase 1 — Harden & ownership
 
-**Status:** implementatie in deze PR.
+**Status:** gedaan (PR #8).
 
 **Doel:** veilig en consistent genoeg voor dagelijks privé-gebruik zonder data-verrassingen.
 
@@ -103,23 +103,28 @@ Cloudflare-fasen 1–3 (publieke site → editor → R2) zijn live. Nummering hi
 
 ## Fase 2 — Git ↔ live convergentie
 
+**Status:** implementatie in deze PR.
+
 **Doel:** version control en live runtime laten samenkomen.
 
-1. Editor-actie **Sync naar Git** (branch of draft PR met `cv.yaml`).
-2. Gedocumenteerde happy path: bewerken → Render (R2 live) → Sync naar Git → merge.
-3. Optionele **Promote from main** (`R2_SEED_FORCE=1`) na merge.
+1. Editor-actie **Sync Git** → `POST /api/sync-git` (branch `editor/cv-sync-*` + draft PR met `cv.yaml`).
+2. Happy path: bewerken → Render (R2) → Sync Git → merge.
+3. **Promote from main** blijft expliciet: `R2_SEED_FORCE=1` / workflow_dispatch `force_r2_seed`.
+4. Hosted: Worker-proxy `github.api` injecteert `GITHUB_TOKEN` (repo-scoped); token komt niet in de container.
 
-**Done when:** één happy path zonder stille CI-overschrijving; promote is expliciet.
+**Done when:** één happy path zonder stille CI-overschrijving; promote is expliciet; Sync Git werkt met geconfigureerde token.
 
 ---
 
 ## Fase 3 — Operatie & DX
 
-1. Cold start / `sleepAfter` + wake-UX.
-2. Editor-deploy niet rebuilden puur om `cv.yaml`-content.
-3. Beleid binaries: `output/` niet (of LFS) committen.
-4. Observability bij failed R2 publish; small blast-radius tokens.
-5. Optimistic concurrency (etag) als fase 2 concurrentie introduceert.
+**Status:** implementatie in deze PR.
+
+1. Cold start: `sleepAfter` **45m** + wake-banner / `/api/wake`.
+2. Editor-deploy triggert **niet** meer op alleen `cv.yaml` (live YAML uit R2).
+3. Binaries: `output/*` + `site/public/CV.*` gitignored; site-deploy **rendert** vóór sync.
+4. Observability: `r2_last_publish_error` op `/api/health`; failed R2 puts gelogd.
+5. Optimistic concurrency: R2 PUT met `If-Match` etag (412 bij conflict).
 
 ---
 
@@ -142,8 +147,8 @@ Default tot besluit: **wont fix**.
 | Fit single-owner engineer | Hoog | Pipeline + eigen hosting |
 | Sollicitatie-inhoud | Medium | Checklist + template; gebruiker vult in |
 | SaaS/UX concurrentie | Laag | Bewust out of scope |
-| Security (as-deployed) | Medium→Hoog* | Hardening + Access-checklist (*Access blijft operationeel) |
-| Data-consistentie Git↔R2 | Medium* | Non-destructive seed + save≠artifact publish |
-| CI quality | Medium→Hoog* | pytest in validate |
+| Security (as-deployed) | Hoog* | Hardening + Access-checklist (*Access blijft operationeel) |
+| Data-consistentie Git↔R2 | Hoog* | Sync Git + non-destructive seed + save≠artifact |
+| CI quality | Hoog* | pytest + render-before-site-deploy |
 
-\* na afronden fase 1.
+\* na afronden fase 1–3.

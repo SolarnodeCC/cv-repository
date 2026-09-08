@@ -91,6 +91,16 @@ body {
   animation: fade-up 0.65s 0.2s ease-out both;
 }
 
+.wake-banner {
+  margin: 0 1.25rem 0.55rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid rgba(232, 160, 74, 0.35);
+  background: rgba(196, 122, 31, 0.15);
+  color: var(--amber-soft);
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}
+
 .lede code {
   font-family: var(--font-mono);
   font-size: 0.86em;

@@ -1,4 +1,17 @@
-# Generated CV artifacts (committed selectively via `output/`; ignore local scratch)
+# Generated CV artifacts — produced by `make render` / CI; do not commit binaries.
+# R2 + site deploy are the runtime/publish layers (see docs/architectuur-en-roadmap.md).
+output/CV.pdf
+output/CV.png
+output/CV_*.png
+output/CV.html
+output/CV.md
+output/CV.typ
+site/public/CV.pdf
+site/public/CV.png
+site/public/CV.html
+site/public/CV.md
+
+# Generated CV scratch (committed selectively via `output/` README only)
 rendercv_output/
 /tmp/
 .cv.web-buffer.yaml

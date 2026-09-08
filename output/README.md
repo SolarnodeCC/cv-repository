@@ -1,5 +1,5 @@
 # Output
 
-Gegenereerd door `make render` vanuit [`cv.yaml`](../cv.yaml).
+Gegenereerd door `make render` / de editor / CI vanuit [`cv.yaml`](../cv.yaml).
 
-Commit deze map opnieuw na inhoudelijke of theme-wijzigingen, zodat de PDF in de repo up-to-date blijft. CI uploadt dezelfde artifacts ook bij pushes naar `main`.
+**Beleid (fase 3):** commit **geen** PDF/PNG/HTML/MD/Typst binaries. R2 is de live publish-laag; site-deploy rendert of synct artifacts in CI. Alleen deze README blijft in git onder `output/`.

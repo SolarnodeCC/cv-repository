@@ -30,11 +30,14 @@
       <button type="button" id="btn-check" class="btn ghost" title="Sollicitatie-checklist op YAML-inhoud">Check</button>
       <button type="button" id="btn-save" class="btn secondary" title="Slaat YAML op (publieke PDF pas na Render)">Opslaan</button>
       <button type="button" id="btn-render" class="btn primary" title="Bouw PDF/PNG/HTML en publiceer naar R2">Render</button>
+      <button type="button" id="btn-sync-git" class="btn ghost" title="Open draft PR met cv.yaml naar GitHub">Sync Git</button>
       <a id="btn-download" class="btn download" href="/api/download/pdf" download="CV.pdf" title="Download PDF om in te dienen">Download PDF</a>
     </div>
   </header>
 
-  <p class="lede">Bewerk <code>cv.yaml</code>, check of de inhoud indientklaar is, <strong>Render</strong> met het <code>solarnode</code>-theme (publiceert PDF naar R2), en download de PDF. <strong>Opslaan</strong> bewaart alleen YAML. Sneltoetsen: <kbd>Ctrl</kbd>+<kbd>S</kbd> opslaan · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> render · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> check.</p>
+  <div id="wake-banner" class="wake-banner" hidden role="status">Editor wordt gewekt… even geduld na idle.</div>
+
+  <p class="lede">Bewerk <code>cv.yaml</code> → <strong>Render</strong> (R2 live) → <strong>Sync Git</strong> (draft PR) → merge. <strong>Opslaan</strong> bewaart alleen YAML. Promote R2 vanuit Git: <code>R2_SEED_FORCE=1</code>. Sneltoetsen: <kbd>Ctrl</kbd>+<kbd>S</kbd> · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd> sync.</p>
 
   <div class="layout">
     <aside id="checklist-panel" class="checklist" aria-label="Sollicitatie-check" hidden>

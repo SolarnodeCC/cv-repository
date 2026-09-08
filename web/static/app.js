@@ -15,6 +15,7 @@
   const scoreRing = document.getElementById("score-ring");
   const scoreLabel = document.getElementById("score-label");
   const downloadBtn = document.getElementById("btn-download");
+  const wakeBanner = document.getElementById("wake-banner");
 
   let savedContent = "";
   let busy = false;
@@ -30,6 +31,10 @@
     tabSize: 2,
     viewportMargin: 80,
   });
+
+  function setWake(visible) {
+    if (wakeBanner) wakeBanner.hidden = !visible;
+  }
 
   function setStatus(message, { ok, detail } = {}) {
     statusText.textContent = message;
@@ -48,7 +53,7 @@
 
   function setBusy(next) {
     busy = next;
-    ["btn-hydrate", "btn-reload", "btn-validate", "btn-check", "btn-save", "btn-render"].forEach((id) => {
+    ["btn-hydrate", "btn-reload", "btn-validate", "btn-check", "btn-save", "btn-render", "btn-sync-git"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.disabled = next;
     });
@@ -60,24 +65,36 @@
   }
 
   async function api(path, options = {}) {
-    const res = await fetch(path, {
-      headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-      ...options,
-    });
-    const contentType = res.headers.get("content-type") || "";
-    const body = contentType.includes("application/json") ? await res.json() : await res.text();
-    if (!res.ok) {
-      let detail = res.statusText;
-      if (typeof body === "object" && body) {
-        if (typeof body.detail === "string") detail = body.detail;
-        else if (Array.isArray(body.detail)) detail = body.detail.map((d) => d.msg || JSON.stringify(d)).join("; ");
-        else detail = JSON.stringify(body);
-      } else if (typeof body === "string" && body) {
-        detail = body;
+    const started = Date.now();
+    const wakeTimer = setTimeout(() => setWake(true), 2000);
+    try {
+      const res = await fetch(path, {
+        headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+        ...options,
+      });
+      const contentType = res.headers.get("content-type") || "";
+      const body = contentType.includes("application/json") ? await res.json() : await res.text();
+      if (!res.ok) {
+        let detail = res.statusText;
+        if (typeof body === "object" && body) {
+          if (typeof body.detail === "string") detail = body.detail;
+          else if (Array.isArray(body.detail)) detail = body.detail.map((d) => d.msg || JSON.stringify(d)).join("; ");
+          else detail = JSON.stringify(body);
+        } else if (typeof body === "string" && body) {
+          detail = body;
+        }
+        throw new Error(detail);
       }
-      throw new Error(detail);
+      return body;
+    } finally {
+      clearTimeout(wakeTimer);
+      if (Date.now() - started > 2500) {
+        // Keep banner briefly so the user saw the wake hint.
+        setTimeout(() => setWake(false), 800);
+      } else {
+        setWake(false);
+      }
     }
-    return body;
   }
 
   function renderChecklist(result) {
@@ -196,6 +213,27 @@
     }
   }
 
+  async function syncGit() {
+    setBusy(true);
+    setStatus("Sync naar Git… (draft PR)");
+    try {
+      const result = await api("/api/sync-git", {
+        method: "POST",
+        body: JSON.stringify({ content: editor.getValue(), draft: true }),
+      });
+      savedContent = editor.getValue();
+      markDirty();
+      const msg = result.pr_url
+        ? `Draft PR: ${result.pr_url}`
+        : result.message || "Git sync klaar";
+      setStatus(msg, { ok: true, detail: result.branch ? `branch: ${result.branch}` : null });
+    } catch (err) {
+      setStatus(err.message || "Git sync mislukt", { ok: false });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function renderCv() {
     setBusy(true);
     setStatus("Renderen… (RenderCV + Typst)");
@@ -306,6 +344,7 @@
   document.getElementById("btn-save").addEventListener("click", saveCv);
   document.getElementById("btn-validate").addEventListener("click", validateCv);
   document.getElementById("btn-render").addEventListener("click", renderCv);
+  document.getElementById("btn-sync-git").addEventListener("click", syncGit);
   document.getElementById("btn-check").addEventListener("click", () => runChecklist());
   document.getElementById("btn-close-check").addEventListener("click", () => {
     checklistPanel.hidden = true;
@@ -336,7 +375,26 @@
       event.preventDefault();
       if (!busy) runChecklist();
     }
+    if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "g") {
+      event.preventDefault();
+      if (!busy) syncGit();
+    }
   });
+
+  // Prefer /api/wake on hosted editor (Worker); fall back to /api/health locally.
+  (async () => {
+    setWake(true);
+    try {
+      const started = Date.now();
+      let res = await fetch("/api/wake");
+      if (!res.ok) res = await fetch("/api/health");
+      await res.json().catch(() => ({}));
+      if (Date.now() - started < 2000) setWake(false);
+      else setTimeout(() => setWake(false), 600);
+    } catch {
+      setWake(false);
+    }
+  })();
 
   loadCv();
 })();

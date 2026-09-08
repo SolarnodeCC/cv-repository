@@ -18,6 +18,11 @@ R2_ENABLED = os.environ.get("R2_SYNC", "0") not in {"0", "false", "False"}
 
 _ALLOWLIST_PATH = Path(__file__).resolve().parent.parent / "shared" / "r2-allowlist.json"
 
+# Last publish failure (for /api/health observability).
+_last_publish_error: str | None = None
+# Optimistic concurrency: key -> etag from last successful GET/PUT.
+_etags: dict[str, str] = {}
+
 
 def _load_allowlist() -> tuple[frozenset[str], dict[str, str]]:
     data = json.loads(_ALLOWLIST_PATH.read_text(encoding="utf-8"))
@@ -31,34 +36,57 @@ def _load_allowlist() -> tuple[frozenset[str], dict[str, str]]:
 ALLOWED_KEYS, CONTENT_TYPES = _load_allowlist()
 
 
-def _request(method: str, key: str, data: bytes | None = None, content_type: str | None = None) -> tuple[int, bytes]:
+def last_publish_error() -> str | None:
+    return _last_publish_error
+
+
+def _set_publish_error(message: str | None) -> None:
+    global _last_publish_error
+    _last_publish_error = message
+
+
+def _request(
+    method: str,
+    key: str,
+    data: bytes | None = None,
+    content_type: str | None = None,
+    *,
+    if_match: str | None = None,
+) -> tuple[int, bytes, str | None]:
     if key not in ALLOWED_KEYS:
         raise ValueError(f"R2 key not allowed: {key}")
     url = f"{R2_BASE}/{key.lstrip('/')}"
-    headers = {}
+    headers: dict[str, str] = {}
     if content_type:
         headers["Content-Type"] = content_type
+    if if_match:
+        headers["If-Match"] = if_match
     req = urllib.request.Request(url, data=data, method=method, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=60) as resp:
-            return resp.status, resp.read()
+            etag = resp.headers.get("etag")
+            return resp.status, resp.read(), etag
     except urllib.error.HTTPError as exc:
         body = exc.read() if exc.fp else b""
-        return exc.code, body
+        etag = exc.headers.get("etag") if exc.headers else None
+        return exc.code, body, etag
     except urllib.error.URLError as exc:
         logger.warning("R2 %s %s network error: %s", method, key, exc)
-        return 599, b""
+        return 599, b"", None
 
 
 async def r2_get(key: str) -> bytes | None:
     if not R2_ENABLED:
         return None
-    status, body = await asyncio.to_thread(_request, "GET", key)
+    status, body, etag = await asyncio.to_thread(_request, "GET", key)
     if status == 404:
+        _etags.pop(key, None)
         return None
     if status >= 400:
         logger.warning("R2 GET %s failed: HTTP %s", key, status)
         return None
+    if etag:
+        _etags[key] = etag
     return body
 
 
@@ -66,10 +94,27 @@ async def r2_put(key: str, data: bytes, content_type: str | None = None) -> bool
     if not R2_ENABLED:
         return False
     ctype = content_type or CONTENT_TYPES.get(key, "application/octet-stream")
-    status, _ = await asyncio.to_thread(_request, "PUT", key, data, ctype)
-    if status >= 400:
-        logger.warning("R2 PUT %s failed: HTTP %s", key, status)
+    if_match = _etags.get(key)
+    status, _, etag = await asyncio.to_thread(
+        _request, "PUT", key, data, ctype, if_match=if_match
+    )
+    if status == 412:
+        msg = f"R2 PUT {key} conflict (etag mismatch) — herlaad via R2 sync en probeer opnieuw"
+        logger.warning(msg)
+        _set_publish_error(msg)
         return False
+    if status >= 400:
+        msg = f"R2 PUT {key} failed: HTTP {status}"
+        logger.warning(msg)
+        _set_publish_error(msg)
+        return False
+    if etag:
+        _etags[key] = etag
+    elif if_match:
+        # Keep prior etag if server omitted a new one; otherwise clear so next put is unconditional.
+        pass
+    else:
+        _etags.pop(key, None)
     return True
 
 
@@ -121,11 +166,16 @@ async def publish_workspace(
     if not R2_ENABLED:
         return published
 
+    failed = False
     if cv_path.is_file():
         if await r2_put("cv.yaml", cv_path.read_bytes()):
             published.append("cv.yaml")
+        else:
+            failed = True
 
     if not artifacts:
+        if not failed and published:
+            _set_publish_error(None)
         return published
 
     mapping: list[tuple[Path, str]] = [
@@ -143,7 +193,13 @@ async def publish_workspace(
         mapping.append((png1, "output/CV_1.png"))
 
     for path, key in mapping:
-        if path.is_file() and await r2_put(key, path.read_bytes()):
+        if not path.is_file():
+            continue
+        if await r2_put(key, path.read_bytes()):
             published.append(key)
+        else:
+            failed = True
 
+    if not failed:
+        _set_publish_error(None)
     return published

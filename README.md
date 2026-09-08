@@ -18,28 +18,47 @@ Output staat in [`output/`](output/):
 | `output/CV.html` | HTML-preview |
 | `output/CV.typ` | Typst-bron |
 
+## Web editor (lokaal)
+
+Gelijkwaardige YAML + preview-UI bovenop dezelfde CLI/GitHub-pipeline (custom `solarnode`-theme blijft werken):
+
+```bash
+make install
+make web
+```
+
+Open [http://127.0.0.1:8765](http://127.0.0.1:8765):
+
+- YAML-editor voor [`cv.yaml`](cv.yaml)
+- **Valideren** / **Opslaan** / **Render** (schrijft naar `output/`)
+- Preview van PDF, PNG of HTML
+
+Dit is geen hosted SaaS zoals [rendercv.com](https://rendercv.com); de bron blijft deze repo + CI.
+
 ## Structuur
 
 ```text
 cv.yaml                 ← inhoud + design + locale + settings
 solarnode/              ← custom theme (Typst/Jinja-templates + design defaults)
-requirements.txt        ← gepinde RenderCV-versie
-Makefile                ← install / render / validate / watch
+web/                    ← lokale FastAPI editor + preview UI
+requirements.txt        ← gepinde RenderCV-versie (+ web deps)
+Makefile                ← install / render / validate / watch / web
 output/                 ← gegenereerde artifacts (commit na render)
 .github/workflows/      ← validate op elke push/PR; render-artifacts op main
 ```
 
 ## Aanpassen
 
-1. Bewerk [`cv.yaml`](cv.yaml) (JSON Schema-URL bovenaan → autocomplete in VS Code/Cursor).
+1. Bewerk [`cv.yaml`](cv.yaml) in de web editor of in Cursor (JSON Schema-URL bovenaan → autocomplete).
 2. Theme/layout: bestanden in [`solarnode/`](solarnode/) (zie [`solarnode/README.md`](solarnode/README.md)).
-3. `make render` en commit `output/` als je de PDF in de repo wilt bijwerken.
+3. `make render` (of **Render** in de UI) en commit `output/` als je de PDF in de repo wilt bijwerken.
 
 Handige commands:
 
 ```bash
 make validate   # faalt bij ongeldige YAML/theme
 make watch      # herbouw bij elke save
+make web        # lokale editor op :8765
 make clean      # wis output/
 ```
 

@@ -126,37 +126,17 @@ cv:
           - "Managed international delivery teams across Europe, Asia and Australia"
           - "Delivered complex programs in multi-vendor environments"
           - "Managed budgets up to USD 10 million"
-    Opleiding:
-      - institution: Voorbeeld Hogeschool / Universiteit
-        area: Informatica
-        degree: BSc
-        date:
-        start_date: 2018-09
-        end_date: 2022-06
-        location: Nederland
-        summary:
-        highlights:
-          - "Afstudeerproject: beschrijf hier kort het resultaat en de gemeten impact"
-          - "Relevante vakken: algoritmen, databases, netwerken, software engineering"
     Projecten:
       - name: cv-repository
         location: GitHub
         date: 2026
         start_date:
         end_date:
-        summary: Open YAML-CV met custom theme, lokale build en CI.
+        summary: Open YAML-CV met custom Solarnode theme, lokale build en CI-publicatie.
         highlights:
           - "Custom Typst-theme solarnode naast cv.yaml"
           - "make render voor PDF/PNG/HTML; web editor met sollicitatie-check"
           - "GitHub Actions valideert YAML en publiceert artifacts"
-      - name: Ander project
-        location:
-        date:
-        start_date: 2023-01
-        end_date: 2023-06
-        summary: Korte beschrijving van een side project of open-source bijdrage.
-        highlights:
-          - "Tech stack en impact hier (gebruikers, latency, kosten, …)"
     Vaardigheden:
       - label: Leadership
         details: Operational management, practice leadership, P&L, talent development, workforce planning
@@ -171,9 +151,6 @@ cv:
         details: Moedertaal (C2)
       - label: Engels
         details: Professioneel (C1)
-    Certificeringen:
-      - name: Voorbeeld certificaat (AWS / Azure / Scrumban)
-        date: 2025
 
 design:
   theme: solarnode
@@ -250,4 +227,4 @@ settings:
     dont_generate_pdf: false
     dont_generate_png: false
   bold_keywords: []
-  pdf_title: CV
+  pdf_title: CV Remco Oostelaar

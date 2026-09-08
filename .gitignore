@@ -1,0 +1,21 @@
+# Generated CV artifacts (committed selectively via `output/`; ignore local scratch)
+rendercv_output/
+/tmp/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+.env.*
+
+# Editors / OS
+.DS_Store
+.idea/
+*.swp
+*~
+
+# Typst / RenderCV caches
+.cache/

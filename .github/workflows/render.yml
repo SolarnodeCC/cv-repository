@@ -1,0 +1,79 @@
+name: Render CV
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cv.yaml"
+      - "solarnode/**"
+      - "requirements.txt"
+      - ".github/workflows/render.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: render-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  render:
+    name: Build PDF and upload artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install RenderCV (pinned)
+        run: python -m pip install -r requirements.txt
+
+      - name: Render CV
+        id: render
+        run: |
+          set +e
+          make render > render_output.txt 2>&1
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Write failure summary
+        if: steps.render.outputs.exit_code != '0'
+        run: |
+          {
+            echo "## Render failed"
+            echo ""
+            echo '```text'
+            cat render_output.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "${{ steps.render.outputs.exit_code }}"
+
+      - name: Upload CV artifacts
+        if: steps.render.outputs.exit_code == '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cv-output
+          path: |
+            output/CV.pdf
+            output/CV.html
+            output/CV.md
+            output/CV.typ
+            output/CV_*.png
+          if-no-files-found: error
+
+      - name: Write success summary
+        if: steps.render.outputs.exit_code == '0'
+        run: |
+          {
+            echo "## CV rendered"
+            echo ""
+            echo "Download the **cv-output** artifact from this run (PDF, HTML, PNG, Typst)."
+            echo ""
+            echo "Local equivalent: \`make render\` → \`output/CV.pdf\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "${{ steps.render.outputs.exit_code }}"

@@ -1,0 +1,162 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/rendercv/rendercv/refs/tags/v2.8/schema.json
+#
+# Solarnode CV — bronbestand voor RenderCV.
+# Bewerk deze file, daarna: make render
+#
+cv:
+  name: Jouw Naam
+  headline: Software Engineer
+  location: Nederland
+  email: info@solarnode.cc
+  photo:
+  phone:
+  website: https://solarnode.cc
+  social_networks:
+    - network: GitHub
+      username: SolarnodeCC
+    - network: LinkedIn
+      username: solarnode
+  custom_connections:
+  sections:
+    Profiel:
+      - Software engineer met focus op betrouwbare systemen, nette YAML/CI-workflows
+        en productiegerichte tooling. Dit CV is gegenereerd met [RenderCV](https://docs.rendercv.com)
+        vanuit deze repository — vervang deze placeholdertekst met jouw inhoud.
+    Werkervaring:
+      - company: Solarnode
+        position: Software Engineer
+        date:
+        start_date: 2024-01
+        end_date: present
+        location: Remote / NL
+        summary: Bouwen en onderhouden van softwareproducten en interne developer tooling.
+        highlights:
+          - Opzetten van version-controlled CV-pipeline (YAML → PDF) met RenderCV
+          - Automatiseren van builds en validatie via GitHub Actions
+          - Schrijven van duidelijke documentatie en reproduceerbare lokale workflows
+      - company: Voorbeeld Bedrijf
+        position: Junior Developer
+        date:
+        start_date: 2022-09
+        end_date: 2023-12
+        location: Nederland
+        summary:
+        highlights:
+          - Meewerken aan features in een productie-codebase
+          - Code reviews, tests en CI-pijplijnen
+          - Samenwerken met product en design
+    Opleiding:
+      - institution: Voorbeeld Hogeschool / Universiteit
+        area: Informatica
+        degree: BSc
+        date:
+        start_date: 2018-09
+        end_date: 2022-06
+        location: Nederland
+        summary:
+        highlights:
+          - "Afstudeerproject: beschrijf hier kort het resultaat"
+          - "Relevante vakken: algoritmen, databases, netwerken"
+    Projecten:
+      - name: cv-repository
+        location: GitHub
+        date: 2026
+        start_date:
+        end_date:
+        summary: Open YAML-CV met custom theme, lokale build en CI.
+        highlights:
+          - "Custom Typst-theme solarnode naast cv.yaml"
+          - "make render voor PDF/PNG/HTML output"
+          - GitHub Actions valideert YAML en publiceert artifacts
+      - name: Ander project
+        location:
+        date:
+        start_date: 2023-01
+        end_date: 2023-06
+        summary: Korte beschrijving van een side project of open-source bijdrage.
+        highlights:
+          - Tech stack en impact hier
+    Vaardigheden:
+      - label: Talen
+        details: Python, TypeScript, SQL
+      - label: Tools
+        details: Git, GitHub Actions, Docker, RenderCV, Typst
+      - label: Praktijk
+        details: CI/CD, code review, technische documentatie
+
+design:
+  theme: solarnode
+  page:
+    size: a4
+    top_margin: 1.4cm
+    bottom_margin: 1.4cm
+    left_margin: 1.4cm
+    right_margin: 1.4cm
+    show_footer: true
+    show_top_note: true
+  colors:
+    body: rgb(20, 20, 20)
+    name: rgb(15, 48, 80)
+    headline: rgb(15, 48, 80)
+    connections: rgb(15, 48, 80)
+    section_titles: rgb(15, 48, 80)
+    links: rgb(180, 110, 25)
+    footer: rgb(120, 120, 120)
+    top_note: rgb(120, 120, 120)
+  typography:
+    line_spacing: 0.55em
+    alignment: justified-with-no-hyphenation
+    font_family:
+      body: Source Sans 3
+      name: Source Sans 3
+      headline: Source Sans 3
+      connections: Source Sans 3
+      section_titles: Source Sans 3
+    font_size:
+      body: 10pt
+      name: 24pt
+      headline: 11pt
+      connections: 9.5pt
+      section_titles: 1.2em
+  links:
+    underline: false
+    show_external_link_icon: false
+  section_titles:
+    type: with_partial_line
+    space_above: 0.45cm
+    space_below: 0.25cm
+  entries:
+    date_and_location_width: 3.8cm
+    side_space: 0.15cm
+    space_between_columns: 0.15cm
+    allow_page_break: false
+    short_second_row: false
+    degree_width: 1cm
+    summary:
+      space_above: 0.05cm
+      space_left: 0cm
+    highlights:
+      bullet: "•"
+      nested_bullet: "◦"
+      space_left: 0cm
+      space_above: 0.05cm
+
+locale:
+  language: dutch
+
+settings:
+  current_date: today
+  render_command:
+    output_folder: output
+    typst_path: OUTPUT_FOLDER/CV.typ
+    pdf_path: OUTPUT_FOLDER/CV.pdf
+    markdown_path: OUTPUT_FOLDER/CV.md
+    html_path: OUTPUT_FOLDER/CV.html
+    png_path: OUTPUT_FOLDER/CV.png
+    dont_generate_markdown: false
+    dont_generate_html: false
+    dont_generate_typst: false
+    dont_generate_pdf: false
+    dont_generate_png: false
+  bold_keywords: []
+  pdf_title: CV

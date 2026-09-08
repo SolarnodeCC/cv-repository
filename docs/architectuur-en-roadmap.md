@@ -103,7 +103,7 @@ Cloudflare-fasen 1–3 (publieke site → editor → R2) zijn live. Nummering hi
 
 ## Fase 2 — Git ↔ live convergentie
 
-**Status:** implementatie in deze PR.
+**Status:** code gedaan (PR #9); **ops** geautomatiseerd in post-deploy (deze PR).
 
 **Doel:** version control en live runtime laten samenkomen.
 
@@ -111,20 +111,22 @@ Cloudflare-fasen 1–3 (publieke site → editor → R2) zijn live. Nummering hi
 2. Happy path: bewerken → Render (R2) → Sync Git → merge.
 3. **Promote from main** blijft expliciet: `R2_SEED_FORCE=1` / workflow_dispatch `force_r2_seed`.
 4. Hosted: Worker-proxy `github.api` injecteert `GITHUB_TOKEN` (repo-scoped); token komt niet in de container.
+5. Deploy zet `GITHUB_TOKEN` vanuit Actions-secret `CV_EDITOR_GITHUB_TOKEN`.
 
-**Done when:** één happy path zonder stille CI-overschrijving; promote is expliciet; Sync Git werkt met geconfigureerde token.
+**Done when:** Sync Git werkt met geconfigureerde token; Access blokkeert anonieme editor-toegang.
 
 ---
 
 ## Fase 3 — Operatie & DX
 
-**Status:** implementatie in deze PR.
+**Status:** code gedaan (PR #9); **Access + smoke** geautomatiseerd in post-deploy / verify-editor (deze PR).
 
 1. Cold start: `sleepAfter` **45m** + wake-banner / `/api/wake`.
 2. Editor-deploy triggert **niet** meer op alleen `cv.yaml` (live YAML uit R2).
 3. Binaries: `output/*` + `site/public/CV.*` gitignored; site-deploy **rendert** vóór sync.
 4. Observability: `r2_last_publish_error` op `/api/health`; failed R2 puts gelogd.
 5. Optimistic concurrency: R2 PUT met `If-Match` etag (412 bij conflict).
+6. Post-deploy: Access-app upsert + unauthenticated smoke; weekly `Verify CV editor` workflow.
 
 ---
 

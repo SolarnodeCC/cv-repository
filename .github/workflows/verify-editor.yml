@@ -1,0 +1,50 @@
+name: Verify CV editor
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly reminder that Access / git_sync must stay healthy.
+    - cron: "0 9 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Access + git_sync smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Unauthenticated Access gate
+        id: access
+        env:
+          HOST: solarnode-cv-editor.oostelaar.workers.dev
+        run: |
+          code=$(curl -sS -o /tmp/body -w '%{http_code}' "https://$HOST/edge-health" || true)
+          echo "http_code=$code" >> "$GITHUB_OUTPUT"
+          echo "Unauthenticated /edge-health → HTTP $code"
+          if [ "$code" = "200" ] && grep -q '"ok":true' /tmp/body; then
+            echo "::error::Editor is publicly readable — Cloudflare Access is not enforcing."
+            cat /tmp/body
+            exit 1
+          fi
+          echo "Access gate appears active (non-200 JSON)."
+
+      - name: Authenticated edge-health (optional service token)
+        env:
+          HOST: solarnode-cv-editor.oostelaar.workers.dev
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          if [ -z "$CF_ACCESS_CLIENT_ID" ] || [ -z "$CF_ACCESS_CLIENT_SECRET" ]; then
+            echo "No Access service token secrets — skip authenticated git_sync check."
+            exit 0
+          fi
+          body=$(curl -fsS "https://$HOST/edge-health" \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET")
+          echo "$body"
+          echo "$body" | python3 -c 'import sys,json; d=json.load(sys.stdin); assert d.get("ok"); assert d.get("git_sync") is True, d'
+          echo "git_sync OK"

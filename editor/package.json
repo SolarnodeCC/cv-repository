@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "deploy": "wrangler deploy",
+    "post-deploy-ops": "node ./scripts/post-deploy-ops.mjs",
     "dev": "wrangler dev",
     "cf-typegen": "wrangler types",
     "typecheck": "tsc --noEmit"

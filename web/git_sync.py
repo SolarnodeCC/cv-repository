@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
@@ -20,13 +21,7 @@ GITHUB_REPO = os.environ.get("GITHUB_REPO", "SolarnodeCC/cv-repository").strip()
 GITHUB_BASE_BRANCH = os.environ.get("GITHUB_BASE_BRANCH", "main").strip()
 
 _BRANCH_SAFE = re.compile(r"[^a-z0-9._/-]+")
-
-
-def git_sync_configured() -> bool:
-    """True when we can reach GitHub (token locally, or Worker proxy without token)."""
-    if GITHUB_API_BASE.startswith("http://github.api"):
-        return True
-    return bool(GITHUB_TOKEN)
+_configured_cache: tuple[float, bool] | None = None
 
 
 def _headers() -> dict[str, str]:
@@ -60,6 +55,25 @@ def _request(method: str, path: str, payload: dict | None = None) -> tuple[int, 
     except urllib.error.URLError as exc:
         logger.warning("GitHub %s %s network error: %s", method, path, exc)
         return 599, {"message": str(exc.reason if hasattr(exc, "reason") else exc)}
+
+
+def git_sync_configured() -> bool:
+    """True when GitHub API is reachable with auth (token or working Worker proxy)."""
+    global _configured_cache
+
+    now = time.monotonic()
+    if _configured_cache and now - _configured_cache[0] < 60:
+        return _configured_cache[1]
+
+    if GITHUB_API_BASE.startswith("http://github.api"):
+        status, body = _request("GET", f"/repos/{GITHUB_REPO}")
+        msg = str(body.get("message", "")) if isinstance(body, dict) else ""
+        ok = status < 500 and "GITHUB_TOKEN" not in msg
+    else:
+        ok = bool(GITHUB_TOKEN)
+
+    _configured_cache = (now, ok)
+    return ok
 
 
 def _branch_name() -> str:

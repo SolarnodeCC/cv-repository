@@ -388,7 +388,13 @@
       const started = Date.now();
       let res = await fetch("/api/wake");
       if (!res.ok) res = await fetch("/api/health");
-      await res.json().catch(() => ({}));
+      const body = await res.json().catch(() => ({}));
+      const health = body.health || body;
+      const syncBtn = document.getElementById("btn-sync-git");
+      if (syncBtn && health.git_sync === false) {
+        syncBtn.title = "Git sync niet geconfigureerd (GITHUB_TOKEN / Worker secret)";
+        syncBtn.classList.add("disabled");
+      }
       if (Date.now() - started < 2000) setWake(false);
       else setTimeout(() => setWake(false), 600);
     } catch {

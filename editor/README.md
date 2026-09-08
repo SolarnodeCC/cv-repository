@@ -42,12 +42,26 @@ The container talks to R2 via Worker proxy host `cv.r2` (`outboundByHost`). Inte
 
 UI button **Sync Git** → `POST /api/sync-git` creates branch `editor/cv-sync-*` + **draft PR** with `cv.yaml`.
 
-1. Create a fine-grained or classic PAT with `contents:write` + `pull_requests:write` on this repo
-2. `cd editor && npx wrangler secret put GITHUB_TOKEN`
-3. Redeploy the editor Worker
-4. Confirm `/edge-health` shows `"git_sync": true`
+### Required secrets (GitHub Actions → repo secrets)
 
-Locally: `export GITHUB_TOKEN=...` then `make web` (calls `https://api.github.com` directly).
+| Secret | Purpose |
+|--------|---------|
+| `CLOUDFLARE_API_TOKEN` | Deploy Worker/Container + Access API |
+| `CLOUDFLARE_ACCOUNT_ID` | Account id |
+| `CV_EDITOR_GITHUB_TOKEN` | PAT with `contents:write` + `pull_requests:write` → written to Worker as `GITHUB_TOKEN` on each deploy |
+| `ACCESS_ALLOWED_EMAILS` | Optional comma-separated allowlist (default `info@solarnode.cc`) |
+| `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET` | Optional Access service token for authenticated smoke tests |
+
+Deploy runs [`scripts/post-deploy-ops.mjs`](scripts/post-deploy-ops.mjs): puts the GitHub token, upserts an Access app that protects Worker `solarnode-cv-editor` (production + previews), and smoke-checks that unauthenticated `/edge-health` is no longer public JSON.
+
+Locally:
+
+```bash
+export GITHUB_TOKEN=...   # for make web
+# or after deploy:
+cd editor
+CV_EDITOR_GITHUB_TOKEN=... CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... npm run post-deploy-ops
+```
 
 Happy path: edit → **Render** (R2) → **Sync Git** → review/merge → optional **Promote** (`R2_SEED_FORCE=1` on Render/Deploy workflow_dispatch).
 

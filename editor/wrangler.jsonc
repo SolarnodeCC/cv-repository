@@ -6,7 +6,8 @@
   "workers_dev": true,
   "preview_urls": true,
   "observability": {
-    "enabled": true
+    "enabled": true,
+    "head_sampling_rate": 1
   },
   "containers": [
     {

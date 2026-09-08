@@ -7,8 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/lib/codemirror.min.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/theme/material-darker.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/lib/codemirror.min.css"
+    integrity="sha384-EAMaqTIrSR3wOlf2EQj7Kkx5ZCHPjHmlYJsFof5IB8dzXMASyR8eIwXgp+IGz/rs"
+    crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/theme/material-darker.min.css"
+    integrity="sha384-/7IRGUZjrVsGRxRmWYycW70x8/46N5NLfEElIMgl+k0aOfmvzAMSg6Or2NG3a6tp"
+    crossorigin="anonymous" />
   <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
@@ -20,6 +24,7 @@
       <span class="brand-sub">CV Editor</span>
     </div>
     <div class="actions">
+      <button type="button" id="btn-hydrate" class="btn ghost" title="Herlaad uit R2">R2 sync</button>
       <button type="button" id="btn-reload" class="btn ghost" title="Herlaad cv.yaml van schijf">Herladen</button>
       <button type="button" id="btn-validate" class="btn ghost">Valideren</button>
       <button type="button" id="btn-check" class="btn ghost" title="Sollicitatie-check t.o.v. ATS/standaarden">Check</button>
@@ -67,7 +72,7 @@
         <div class="preview-frame">
           <iframe id="preview-pdf" title="PDF preview" hidden></iframe>
           <img id="preview-png" alt="CV pagina preview" hidden />
-          <iframe id="preview-html" title="HTML preview" hidden></iframe>
+          <iframe id="preview-html" title="HTML preview" sandbox="allow-same-origin" hidden></iframe>
           <div id="preview-empty" class="empty-state">
             <p>Nog geen preview geladen.</p>
             <p class="hint">Klik <strong>Render</strong> om PDF/PNG/HTML te bouwen, of wacht tot bestaande <code>output/</code> laadt.</p>
@@ -83,8 +88,12 @@
   </footer>
   <pre id="log-panel" class="log-panel" hidden></pre>
 
-  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/lib/codemirror.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/mode/yaml/yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/lib/codemirror.min.js"
+    integrity="sha384-t/C99Ss9npjVCqOGZhNjaRnafXAhKyPyhSP+cSSP0CWoFTfMXG4+impqZ6WfgO0a"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/mode/yaml/yaml.min.js"
+    integrity="sha384-131Ong53rCgUDHHluJOESiyk8FRC3j7cL7INdfB2n4SVkOoI87gNHb0B23LKlrMp"
+    crossorigin="anonymous"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

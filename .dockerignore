@@ -8,3 +8,4 @@ editor/node_modules
 .github
 *.md
 .cursor
+output

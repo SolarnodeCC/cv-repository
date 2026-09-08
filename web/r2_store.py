@@ -15,6 +15,17 @@ R2_BASE = os.environ.get("R2_HTTP_BASE", "http://cv.r2").rstrip("/")
 # Off by default (local `make web`); Container sets R2_SYNC=1.
 R2_ENABLED = os.environ.get("R2_SYNC", "0") not in {"0", "false", "False"}
 
+ALLOWED_KEYS = frozenset(
+    {
+        "cv.yaml",
+        "output/CV.pdf",
+        "output/CV.html",
+        "output/CV.md",
+        "output/CV.png",
+        "output/CV_1.png",
+    }
+)
+
 CONTENT_TYPES = {
     "cv.yaml": "text/yaml; charset=utf-8",
     "output/CV.pdf": "application/pdf",
@@ -26,6 +37,8 @@ CONTENT_TYPES = {
 
 
 def _request(method: str, key: str, data: bytes | None = None, content_type: str | None = None) -> tuple[int, bytes]:
+    if key not in ALLOWED_KEYS:
+        raise ValueError(f"R2 key not allowed: {key}")
     url = f"{R2_BASE}/{key.lstrip('/')}"
     headers = {}
     if content_type:
@@ -37,6 +50,9 @@ def _request(method: str, key: str, data: bytes | None = None, content_type: str
     except urllib.error.HTTPError as exc:
         body = exc.read() if exc.fp else b""
         return exc.code, body
+    except urllib.error.URLError as exc:
+        logger.warning("R2 %s %s network error: %s", method, key, exc)
+        return 599, b""
 
 
 async def r2_get(key: str) -> bytes | None:
@@ -64,7 +80,7 @@ async def r2_put(key: str, data: bytes, content_type: str | None = None) -> bool
 
 async def hydrate_from_r2(*, cv_path: Path, output_dir: Path) -> dict:
     """Pull cv.yaml + rendered artifacts from R2 into the local workspace."""
-    result = {"cv": False, "artifacts": []}
+    result: dict = {"cv": False, "artifacts": []}
     if not R2_ENABLED:
         return result
 
@@ -84,7 +100,10 @@ async def hydrate_from_r2(*, cv_path: Path, output_dir: Path) -> dict:
         payload = await r2_get(key)
         if not payload:
             continue
-        dest = cv_path.parent / key
+        dest = (cv_path.parent / key).resolve()
+        if not str(dest).startswith(str(cv_path.parent.resolve())):
+            logger.error("Refusing to write outside repo root: %s", dest)
+            continue
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(payload)
         result["artifacts"].append(key)

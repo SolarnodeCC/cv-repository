@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import shutil
 import tempfile
@@ -18,25 +19,40 @@ from pydantic import BaseModel, Field
 from web.checklist import evaluate_application_readiness
 from web.r2_store import hydrate_from_r2, publish_workspace
 
+logger = logging.getLogger("web.app")
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CV_PATH = REPO_ROOT / "cv.yaml"
 BUFFER_PATH = REPO_ROOT / ".cv.web-buffer.yaml"
 OUTPUT_DIR = REPO_ROOT / "output"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
+MAX_CV_BYTES = int(os.environ.get("MAX_CV_BYTES", str(512 * 1024)))
+RENDER_TIMEOUT_SEC = float(os.environ.get("RENDER_TIMEOUT_SEC", "120"))
+
+_render_lock = asyncio.Lock()
+_hydrated = False
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    await hydrate_from_r2(cv_path=CV_PATH, output_dir=OUTPUT_DIR)
+    global _hydrated
+    try:
+        result = await hydrate_from_r2(cv_path=CV_PATH, output_dir=OUTPUT_DIR)
+        _hydrated = True
+        logger.info("R2 hydrate on boot: %s", result)
+    except Exception:
+        logger.exception("R2 hydrate on boot failed")
+        _hydrated = False
     yield
 
 
-app = FastAPI(title="Solarnode CV Editor", version="0.2.0", lifespan=lifespan)
+app = FastAPI(title="Solarnode CV Editor", version="0.3.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 class CvPayload(BaseModel):
-    content: str = Field(..., min_length=1, description="Full cv.yaml text")
+    content: str = Field(..., min_length=1, max_length=MAX_CV_BYTES, description="Full cv.yaml text")
 
 
 class StatusResponse(BaseModel):
@@ -56,6 +72,8 @@ def _resolve_rendercv() -> str:
 
 
 def _parse_yaml(content: str) -> None:
+    if len(content.encode("utf-8")) > MAX_CV_BYTES:
+        raise HTTPException(status_code=413, detail=f"cv.yaml te groot (max {MAX_CV_BYTES} bytes)")
     try:
         data = yaml.safe_load(content)
     except yaml.YAMLError as exc:
@@ -77,7 +95,12 @@ async def _run_rendercv(args: list[str], *, cwd: Path = REPO_ROOT) -> tuple[int,
         stderr=asyncio.subprocess.STDOUT,
         env=env,
     )
-    out_bytes, _ = await proc.communicate()
+    try:
+        out_bytes, _ = await asyncio.wait_for(proc.communicate(), timeout=RENDER_TIMEOUT_SEC)
+    except asyncio.TimeoutError:
+        proc.kill()
+        await proc.wait()
+        return 124, f"Render timed out after {RENDER_TIMEOUT_SEC:.0f}s"
     text = out_bytes.decode("utf-8", errors="replace")
     return proc.returncode or 0, text
 
@@ -97,19 +120,34 @@ async def health() -> dict:
         "output_exists": OUTPUT_DIR.is_dir(),
         "rendercv": rendercv if Path(rendercv).is_file() else None,
         "r2_sync": os.environ.get("R2_SYNC", "0") not in {"0", "false", "False"},
+        "r2_hydrated": _hydrated,
+        "render_busy": _render_lock.locked(),
     }
 
 
 @app.get("/api/cv")
 async def get_cv() -> dict:
-    # Prefer freshest R2 copy when running in the Cloudflare container.
-    await hydrate_from_r2(cv_path=CV_PATH, output_dir=OUTPUT_DIR)
     if not CV_PATH.is_file():
         raise HTTPException(status_code=404, detail="cv.yaml niet gevonden")
     return {
         "path": "cv.yaml",
         "content": CV_PATH.read_text(encoding="utf-8"),
     }
+
+
+@app.post("/api/hydrate", response_model=StatusResponse)
+async def hydrate_cv() -> StatusResponse:
+    """Explicit reload from R2 (does not run on every GET /api/cv)."""
+    global _hydrated
+    result = await hydrate_from_r2(cv_path=CV_PATH, output_dir=OUTPUT_DIR)
+    _hydrated = True
+    parts = []
+    if result["cv"]:
+        parts.append("cv.yaml")
+    parts.extend(result["artifacts"])
+    if not parts:
+        return StatusResponse(ok=True, message="Geen R2-data gevonden (lokale bestanden ongewijzigd)")
+    return StatusResponse(ok=True, message=f"Hernieuwbaar uit R2: {', '.join(parts)}")
 
 
 @app.put("/api/cv", response_model=StatusResponse)
@@ -135,18 +173,19 @@ async def validate_cv(payload: CvPayload | None = None) -> StatusResponse:
     """Validate YAML (optionally from editor buffer) with a dry-run render."""
     tmp_dir = Path(tempfile.mkdtemp(prefix="rendercv-validate-"))
     try:
-        cv_file = _write_buffer(payload.content) if payload is not None else CV_PATH
-        code, log = await _run_rendercv(
-            [
-                "render",
-                str(cv_file),
-                "--dont-generate-html",
-                "--dont-generate-markdown",
-                "--dont-generate-png",
-                "--output-folder",
-                str(tmp_dir / "out"),
-            ]
-        )
+        async with _render_lock:
+            cv_file = _write_buffer(payload.content) if payload is not None else CV_PATH
+            code, log = await _run_rendercv(
+                [
+                    "render",
+                    str(cv_file),
+                    "--dont-generate-html",
+                    "--dont-generate-markdown",
+                    "--dont-generate-png",
+                    "--output-folder",
+                    str(tmp_dir / "out"),
+                ]
+            )
         if code != 0:
             return StatusResponse(ok=False, message="Validatie mislukt", detail=log[-4000:])
         return StatusResponse(ok=True, message="cv.yaml is geldig")
@@ -159,28 +198,32 @@ async def validate_cv(payload: CvPayload | None = None) -> StatusResponse:
 @app.post("/api/render", response_model=StatusResponse)
 async def render_cv(payload: CvPayload | None = None) -> StatusResponse:
     """Save optional buffer, then render into output/ and publish to R2."""
-    if payload is not None:
-        _parse_yaml(payload.content)
-        CV_PATH.write_text(
-            payload.content if payload.content.endswith("\n") else payload.content + "\n",
-            encoding="utf-8",
+    if _render_lock.locked():
+        raise HTTPException(status_code=409, detail="Er draait al een render — even wachten")
+
+    async with _render_lock:
+        if payload is not None:
+            _parse_yaml(payload.content)
+            CV_PATH.write_text(
+                payload.content if payload.content.endswith("\n") else payload.content + "\n",
+                encoding="utf-8",
+            )
+
+        code, log = await _run_rendercv(["render", str(CV_PATH)])
+        if code != 0:
+            return StatusResponse(ok=False, message="Render mislukt", detail=log[-4000:])
+
+        pdf = OUTPUT_DIR / "CV.pdf"
+        if not pdf.is_file():
+            return StatusResponse(ok=False, message="Render klaar maar CV.pdf ontbreekt", detail=log[-4000:])
+
+        published = await publish_workspace(cv_path=CV_PATH, output_dir=OUTPUT_DIR)
+        pub = f" · R2 {len(published)} files" if published else ""
+        return StatusResponse(
+            ok=True,
+            message=f"Render voltooid → output/CV.pdf{pub}",
+            detail=log[-2000:] or None,
         )
-
-    code, log = await _run_rendercv(["render", str(CV_PATH)])
-    if code != 0:
-        return StatusResponse(ok=False, message="Render mislukt", detail=log[-4000:])
-
-    pdf = OUTPUT_DIR / "CV.pdf"
-    if not pdf.is_file():
-        return StatusResponse(ok=False, message="Render klaar maar CV.pdf ontbreekt", detail=log[-4000:])
-
-    published = await publish_workspace(cv_path=CV_PATH, output_dir=OUTPUT_DIR)
-    pub = f" · R2 {len(published)} files" if published else ""
-    return StatusResponse(
-        ok=True,
-        message=f"Render voltooid → output/CV.pdf{pub}",
-        detail=log[-2000:] or None,
-    )
 
 
 @app.post("/api/publish", response_model=StatusResponse)

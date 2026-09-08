@@ -5,6 +5,24 @@ const R2_PATHS: Record<string, { key: string; contentType: string }> = {
   "/CV.png": { key: "output/CV.png", contentType: "image/png" },
 };
 
+const SECURITY_HEADERS: Record<string, string> = {
+  "x-content-type-options": "nosniff",
+  "referrer-policy": "strict-origin-when-cross-origin",
+  "x-frame-options": "SAMEORIGIN",
+};
+
+function withSecurityHeaders(response: Response): Response {
+  const headers = new Headers(response.headers);
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    headers.set(key, value);
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -20,11 +38,10 @@ export default {
         }
         headers.set("etag", object.httpEtag);
         headers.set("cache-control", "public, max-age=60");
-        return new Response(object.body, { headers });
+        return withSecurityHeaders(new Response(object.body, { headers }));
       }
-      // Fall through to bundled static assets from the last deploy.
     }
 
-    return env.ASSETS.fetch(request);
+    return withSecurityHeaders(await env.ASSETS.fetch(request));
   },
 };

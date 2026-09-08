@@ -1,17 +1,32 @@
-import { Container, getContainer } from "@cloudflare/containers";
+import { Container, ContainerProxy, getContainer } from "@cloudflare/containers";
+
+/** Only these R2 object keys may be read/written by the editor container. */
+const ALLOWED_R2_KEYS = new Set([
+  "cv.yaml",
+  "output/CV.pdf",
+  "output/CV.html",
+  "output/CV.md",
+  "output/CV.png",
+  "output/CV_1.png",
+]);
 
 /**
  * Singleton CV editor container (RenderCV + FastAPI UI).
- * Protect this Worker with Cloudflare Access in the dashboard —
- * do not leave write-capable editing open on the public internet.
+ * Intended for private use. Prefer Cloudflare Access in front of this Worker.
  *
- * R2 access from inside the container goes through virtual host `cv.r2`
- * (see outboundByHost) — no S3 credentials needed in the image.
+ * R2 access uses virtual host `cv.r2` via outbound interception.
  */
 export class CvEditorContainer extends Container {
   defaultPort = 8080;
   sleepAfter = "15m";
-  enableInternet = true;
+  // Deny-by-default egress; allow R2 bridge + editor CDN assets only.
+  enableInternet = false;
+  allowedHosts = [
+    "cv.r2",
+    "cdn.jsdelivr.net",
+    "fonts.googleapis.com",
+    "fonts.gstatic.com",
+  ];
   envVars = {
     R2_SYNC: "1",
     R2_HTTP_BASE: "http://cv.r2",
@@ -21,8 +36,8 @@ export class CvEditorContainer extends Container {
     "cv.r2": async (request: Request, env: Env) => {
       const url = new URL(request.url);
       const key = decodeURIComponent(url.pathname.replace(/^\/+/, ""));
-      if (!key || key.includes("..")) {
-        return new Response("Bad key", { status: 400 });
+      if (!ALLOWED_R2_KEYS.has(key)) {
+        return new Response("Forbidden key", { status: 403 });
       }
 
       if (request.method === "GET") {
@@ -45,15 +60,13 @@ export class CvEditorContainer extends Container {
         return Response.json({ ok: true, key });
       }
 
-      if (request.method === "DELETE") {
-        await env.CV_DATA.delete(key);
-        return Response.json({ ok: true, key });
-      }
-
       return new Response("Method not allowed", { status: 405 });
     },
   };
 }
+
+// Required for Containers outbound interception (R2 bridge).
+export { ContainerProxy };
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -64,7 +77,7 @@ export default {
         ok: true,
         worker: "solarnode-cv-editor",
         r2: "solarnode-cv-data",
-        note: "Protect this Worker with Cloudflare Access before sharing the URL.",
+        allowed_r2_keys: [...ALLOWED_R2_KEYS],
       });
     }
 

@@ -48,8 +48,9 @@
 
   function setBusy(next) {
     busy = next;
-    ["btn-reload", "btn-validate", "btn-check", "btn-save", "btn-render"].forEach((id) => {
-      document.getElementById(id).disabled = next;
+    ["btn-hydrate", "btn-reload", "btn-validate", "btn-check", "btn-save", "btn-render"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = next;
     });
   }
 
@@ -66,8 +67,15 @@
     const contentType = res.headers.get("content-type") || "";
     const body = contentType.includes("application/json") ? await res.json() : await res.text();
     if (!res.ok) {
-      const detail = typeof body === "object" ? body.detail || JSON.stringify(body) : body;
-      throw new Error(detail || res.statusText);
+      let detail = res.statusText;
+      if (typeof body === "object" && body) {
+        if (typeof body.detail === "string") detail = body.detail;
+        else if (Array.isArray(body.detail)) detail = body.detail.map((d) => d.msg || JSON.stringify(d)).join("; ");
+        else detail = JSON.stringify(body);
+      } else if (typeof body === "string" && body) {
+        detail = body;
+      }
+      throw new Error(detail);
     }
     return body;
   }
@@ -113,6 +121,25 @@
       return null;
     } finally {
       if (!silent) setBusy(false);
+    }
+  }
+
+  async function hydrateCv() {
+    setBusy(true);
+    setStatus("R2 sync…");
+    try {
+      const result = await api("/api/hydrate", { method: "POST", body: "{}" });
+      const data = await api("/api/cv");
+      savedContent = data.content;
+      editor.setValue(data.content);
+      markDirty();
+      setStatus(result.message, { ok: true });
+      await tryShowPreview(true);
+      await runChecklist({ silent: true });
+    } catch (err) {
+      setStatus(err.message || "R2 sync mislukt", { ok: false });
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -274,6 +301,7 @@
   });
 
   editor.on("change", markDirty);
+  document.getElementById("btn-hydrate").addEventListener("click", hydrateCv);
   document.getElementById("btn-reload").addEventListener("click", loadCv);
   document.getElementById("btn-save").addEventListener("click", saveCv);
   document.getElementById("btn-validate").addEventListener("click", validateCv);

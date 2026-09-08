@@ -126,7 +126,12 @@
       if (result.ok) {
         savedContent = editor.getValue();
         markDirty();
-        await showPreview(activePreview, true);
+        try {
+          await showPreview(activePreview, true);
+        } catch {
+          hideAllPreviews();
+          previewEmpty.hidden = false;
+        }
       }
       setStatus(result.message, { ok: result.ok, detail: result.detail });
     } catch (err) {
@@ -155,15 +160,16 @@
   async function showPreview(kind, bust = true) {
     const stamp = bust ? `?t=${Date.now()}` : "";
     hideAllPreviews();
+    const status = await api("/api/preview/status");
 
     if (kind === "pdf") {
-      const probe = await fetch(`/api/preview/pdf${stamp}`, { method: "HEAD" }).catch(() => null);
-      if (!probe || !probe.ok) throw new Error("geen pdf");
+      if (!status.pdf) throw new Error("geen pdf");
       previewPdf.src = `/api/preview/pdf${stamp}`;
       previewPdf.hidden = false;
       return;
     }
     if (kind === "png") {
+      if (!status.png) throw new Error("geen png");
       previewPng.src = `/api/preview/png${stamp}`;
       await new Promise((resolve, reject) => {
         previewPng.onload = resolve;
@@ -173,8 +179,7 @@
       return;
     }
     if (kind === "html") {
-      const probe = await fetch(`/api/preview/html${stamp}`, { method: "HEAD" }).catch(() => null);
-      if (!probe || !probe.ok) throw new Error("geen html");
+      if (!status.html) throw new Error("geen html");
       previewHtml.src = `/api/preview/html${stamp}`;
       previewHtml.hidden = false;
     }

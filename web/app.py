@@ -160,6 +160,16 @@ async def render_cv(payload: CvPayload | None = None) -> StatusResponse:
     return StatusResponse(ok=True, message="Render voltooid → output/CV.pdf", detail=log[-2000:] or None)
 
 
+@app.get("/api/preview/status")
+async def preview_status() -> dict:
+    pngs = sorted(OUTPUT_DIR.glob("CV_*.png"))
+    return {
+        "pdf": (OUTPUT_DIR / "CV.pdf").is_file(),
+        "html": (OUTPUT_DIR / "CV.html").is_file(),
+        "png": bool(pngs) or (OUTPUT_DIR / "CV.png").is_file(),
+    }
+
+
 @app.get("/api/preview/pdf")
 async def preview_pdf() -> FileResponse:
     path = OUTPUT_DIR / "CV.pdf"

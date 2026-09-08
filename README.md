@@ -39,6 +39,9 @@ Dit is geen hosted SaaS zoals [rendercv.com](https://rendercv.com); de bron blij
 
 De Worker **`solarnode-cv`** serveert `site/public/` (landingspagina + PDF/HTML/PNG) via Workers Static Assets.
 
+- Live: https://solarnode-cv.oostelaar.workers.dev  
+- Custom domain (na deploy): `https://cv.solarnode.cc`
+
 ```bash
 cd site
 npm install
@@ -49,12 +52,20 @@ Vereiste credentials (lokaal of GitHub Actions secrets):
 
 | Secret | Waar |
 | --- | --- |
-| `CLOUDFLARE_API_TOKEN` | Token met o.a. *Workers Scripts:Edit* + *Account:Read* |
+| `CLOUDFLARE_API_TOKEN` | Token met o.a. *Workers Scripts:Edit* + *Account:Read* (+ *Containers* voor de editor) |
 | `CLOUDFLARE_ACCOUNT_ID` | Account-ID uit het Cloudflare-dashboard |
 
 Na merge naar `main` deployt [`.github/workflows/deploy-site.yml`](.github/workflows/deploy-site.yml) automatisch wanneer `output/` of `site/` wijzigt.
 
-Optioneel: koppel daarna een custom domain (bijv. `cv.solarnode.cc`) in **Workers & Pages → solarnode-cv → Custom Domains**.
+## Cloudflare (Fase 2 — editor + Access)
+
+De Worker **`solarnode-cv-editor`** draait de YAML-editor in een **Container** (RenderCV + Typst). Dit is **privé** bedoeld:
+
+1. Deploy via `make editor-deploy` of Actions → **Deploy CV editor**
+2. Dashboard → Worker `solarnode-cv-editor` → **Access** → protect (alleen jouw e-mail / `@solarnode.cc`)
+3. Laat `solarnode-cv` publiek (geen Access op de publieke CV-site)
+
+Zie [`editor/README.md`](editor/README.md). R2-bucket `solarnode-cv-data` is aangemaakt voor latere persistentie; GitHub blijft voorlopig bron van waarheid.
 
 ## Structuur
 
@@ -62,11 +73,12 @@ Optioneel: koppel daarna een custom domain (bijv. `cv.solarnode.cc`) in **Worker
 cv.yaml                 ← inhoud + design + locale + settings
 solarnode/              ← custom theme (Typst/Jinja-templates + design defaults)
 web/                    ← lokale FastAPI editor + preview UI
-site/                   ← Cloudflare Worker (static CV site)
+site/                   ← Cloudflare Worker (public CV site)
+editor/                 ← Cloudflare Container editor (privé / Access)
 requirements.txt        ← gepinde RenderCV-versie (+ web deps)
-Makefile                ← install / render / validate / watch / web / site-*
+Makefile                ← install / render / validate / watch / web / site-* / editor-*
 output/                 ← gegenereerde artifacts (commit na render)
-.github/workflows/      ← validate, render, deploy-site
+.github/workflows/      ← validate, render, deploy-site, deploy-editor
 ```
 
 ## Aanpassen
@@ -82,6 +94,7 @@ make validate   # faalt bij ongeldige YAML/theme
 make watch      # herbouw bij elke save
 make web        # lokale editor op :8765
 make site-deploy # publieke CV-site naar Cloudflare
+make editor-deploy # privé editor Container naar Cloudflare
 make clean      # wis output/
 ```
 
@@ -90,6 +103,7 @@ make clean      # wis output/
 - **Validate CV** — dry-run render op elke push/PR.
 - **Render CV** — volledige build op `main` (of handmatig via *Actions → Render CV*) en upload van artifact `cv-output`.
 - **Deploy CV site** — sync `output/` → `site/public` en deploy Worker `solarnode-cv` (vereist Cloudflare secrets).
+- **Deploy CV editor** — build Container-image + deploy `solarnode-cv-editor` (Docker + Containers-rechten op het token).
 
 RenderCV is gepind in `requirements.txt`. Bij een upgrade: versie + schema-URL in `cv.yaml` en `.vscode/settings.json` synchroon houden.
 

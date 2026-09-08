@@ -16,6 +16,9 @@ venv/
 site/node_modules/
 site/.wrangler/
 site/dist/
+editor/node_modules/
+editor/.wrangler/
+editor/dist/
 
 # Editors / OS
 .DS_Store

@@ -1,0 +1,40 @@
+{
+  "name": "solarnode-cv-editor",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": {
+    "enabled": true
+  },
+  "containers": [
+    {
+      "class_name": "CvEditorContainer",
+      "image": "./Dockerfile",
+      "image_build_context": "..",
+      "instance_type": "standard-1",
+      "max_instances": 1
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CV_EDITOR",
+        "class_name": "CvEditorContainer"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["CvEditorContainer"]
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "CV_DATA",
+      "bucket_name": "solarnode-cv-data"
+    }
+  ]
+}

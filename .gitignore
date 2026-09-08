@@ -12,6 +12,11 @@ venv/
 .env
 .env.*
 
+# Node / Cloudflare site
+site/node_modules/
+site/.wrangler/
+site/dist/
+
 # Editors / OS
 .DS_Store
 .idea/

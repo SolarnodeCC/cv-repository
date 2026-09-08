@@ -1,6 +1,7 @@
 # Generated CV artifacts (committed selectively via `output/`; ignore local scratch)
 rendercv_output/
 /tmp/
+.cv.web-buffer.yaml
 
 # Python
 __pycache__/
